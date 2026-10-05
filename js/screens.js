@@ -2,7 +2,7 @@
 // ===== экраны: заставка, меню, главы, ролик, пауза, итоги, финал; главный цикл =====
 let STATE='loading', ST={t:0};
 const IS_ELECTRON=/Electron/i.test(navigator.userAgent);
-const VERSION='v0.5.2';
+const VERSION='v0.5.3';
 if(!SETTINGS.fx)SETTINGS.fx='high';
 function setState(s,o={}){ STATE=s; ST=Object.assign({t:0,sel:0},o); MOUSE.click=false; }
 function loadSave(){ return Object.assign({chapter:0,cp:0,unlocked:0,shards:[],done:false,deaths:0,time:0},getSave()||{}); }

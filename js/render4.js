@@ -43,11 +43,17 @@ function drawGate(g){ const o=g.open; if(g.dir==='bridge'){ const w=g.w*o; ctx.f
     if(w>2){ ctx.fillStyle='#5a3e28'; ctx.fillRect(g.x,g.y,w,g.h); ctx.fillStyle='rgba(255,236,200,.85)'; ctx.fillRect(g.x,g.y,w,2); ctx.strokeStyle='#2a1a10'; ctx.lineWidth=2; ctx.beginPath(); for(let xx=g.x;xx<g.x+w-10;xx+=25){ ctx.moveTo(xx,g.y+g.h); ctx.lineTo(xx+12,g.y+g.h+18); ctx.lineTo(xx+25,g.y+g.h);} ctx.stroke(); } return; }
   const h=g.h*(1-o); ctx.fillStyle='#24160c'; ctx.fillRect(g.x-8,g.y-24,g.w+16,24); ctx.fillRect(g.x-8,g.y-24,6,g.h+24); ctx.fillRect(g.x+g.w+2,g.y-24,6,g.h+24);
   if(h>1){ ctx.fillStyle='#6a4a30'; ctx.fillRect(g.x,g.y,g.w,h); ctx.fillStyle='rgba(0,0,0,.35)'; for(let yy=g.y+12;yy<g.y+h;yy+=24)ctx.fillRect(g.x,yy,g.w,3); ctx.fillStyle='rgba(255,200,120,.8)'; ctx.fillRect(g.x+g.w/2-3,g.y+h-14,6,6); } }
-function drawPull(p,target){ const t=W.time; ctx.strokeStyle='#2a1a10'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(p.x,p.y-12); ctx.lineTo(p.x,p.y-80); ctx.lineTo(p.x+90,p.y-80); ctx.stroke(); ctx.fillStyle='#2a1a10'; ctx.fillRect(p.x+84,p.y-86,12,300);
+function drawPull(p,target){ const t=W.time; ctx.strokeStyle='#2a1a10'; ctx.lineWidth=3; const ry=p.y+(p.done?20:0); ctx.beginPath(); ctx.moveTo(p.x,ry-9); ctx.lineTo(p.x,p.y-80); ctx.lineTo(p.x+90,p.y-80); ctx.stroke(); ctx.fillStyle='#2a1a10'; ctx.fillRect(p.x+84,p.y-86,12,96);
   const ang=p.done?0.9:0; ctx.save(); ctx.translate(p.x,p.y-80); ctx.rotate(ang); ctx.restore();
   ctx.strokeStyle=p.done?'#6a5a48':target?'#ffd08a':'#c0a070'; ctx.lineWidth=3.4; ctx.beginPath(); ctx.arc(p.x,p.y+(p.done?20:0),9,0,7); ctx.stroke();
   if(!p.done){ ctx.fillStyle='rgba(255,90,60,.9)'; ctx.fillRect(p.x-3,p.y-30,6,6); }
   if(target){ const k=0.6+0.4*Math.sin(t*8); ctx.save(); ctx.globalCompositeOperation='lighter'; glow(GLOW.warm,p.x,p.y,34,0.5*k); ctx.restore(); } }
+function drawMirrorHint(L){ const R=L.receivers.find(r=>r.link==='B1'); if(!R||R.done||!L.mirrors.length)return; const P=W.P; if(P.x<6650||P.x>7720)return;
+  const M=id=>L.mirrors.find(m=>m.id===id); const m0=M('M0'),m1=M('M1'),m2=M('M2'); if(!m0||!m1||!m2)return; const ok=m0.t===m0.alt||!m0.alt; const t=W.time;
+  const pts=[[m0.x-90,m0.y],[m0.x,m0.y],[m1.x,m1.y],[m2.x,m2.y],[R.x,R.y]]; ctx.save(); ctx.setLineDash([6,10]); ctx.lineDashOffset=-t*30; ctx.lineWidth=2;
+  ctx.strokeStyle=`rgba(255,226,150,${0.28+0.12*Math.sin(t*3)})`; ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.stroke(); ctx.setLineDash([]);
+  if(!ok){ ctx.strokeStyle='rgba(255,90,60,.85)'; ctx.lineWidth=3; const x=m0.x+30,y=m0.y-30; ctx.beginPath(); ctx.moveTo(x-7,y-7); ctx.lineTo(x+7,y+7); ctx.moveTo(x+7,y-7); ctx.lineTo(x-7,y+7); ctx.stroke(); }
+  ctx.restore(); }
 function drawMirror(m){ const t=W.time; ctx.fillStyle='#2a1a10'; ctx.fillRect(m.x-4,m.y+18,8,Math.max(0,groundY(m.x)-m.y-18)); ctx.fillRect(m.x-14,m.y+14,28,8);
   ctx.save(); ctx.translate(m.x,m.y); const rot=(m.t==='/'?-Math.PI/4:Math.PI/4); const f=m.flip?Math.sin(m.flip/0.5*Math.PI)*0.6:0; ctx.strokeStyle='#2a1a10'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,22,0,7); ctx.stroke(); ctx.rotate(rot+f);
   ctx.fillStyle='#2a1a10'; ctx.fillRect(-32,-7,64,14); const g=ctx.createLinearGradient(0,-6,0,4); g.addColorStop(0,'#ffffff'); g.addColorStop(.5,'#dfe8ee'); g.addColorStop(1,'#8a9aa6'); ctx.fillStyle=g; ctx.fillRect(-29,-5,58,7); ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fillRect(-29,-5,58,1.5); ctx.restore();
@@ -98,7 +104,7 @@ function drawMark(m){ const t=W.time; ctx.fillStyle='#2a1a10'; ctx.fillRect(m.x-
   ctx.save(); ctx.globalCompositeOperation='lighter'; glow(GLOW.teal,m.x,m.y-70,34,0.35+0.15*Math.sin(t*2)); ctx.restore(); }
 function drawDecor4(L){ for(const d of L.decor){ if(d.k==='mtower'&&inVis(d.x-80,160))mtowerDecor(d); else if(d.k==='awning'&&inVis(d.x-20,d.w+40))awningDecor(d); else if(d.k==='semaphore'&&inVis(d.x-140,280))semaphoreDecor(d); } }
 function drawMechBack4(L){ for(const pl of L.plates) if(inVis(pl.x,pl.w))drawPlate(pl); for(const g of L.gates) if(inVis(g.x-20,g.w+40))drawGate(g);
-  for(const m of L.mirrors) if(inVis(m.x-40,80))drawMirror(m); for(const r of L.receivers) if(inVis(r.x-40,80))drawReceiver(r);
+  drawMirrorHint(L); for(const m of L.mirrors) if(inVis(m.x-40,80))drawMirror(m); for(const r of L.receivers) if(inVis(r.x-40,80))drawReceiver(r);
   for(const m of L.marks) if(inVis(m.x-30,60))drawMark(m);
   for(const n of L.npcs){ if(!inVis(n.x-40,80))continue; const show=n.when==='camp'?W.sola!=='take':W.sola==='take'; if(show)drawSola(n); } }
 function drawMechFront4(L,tg){ for(const p of L.pulls) if(inVis(p.x-30,140))drawPull(p,tg===p); for(const c of L.crates) if(inVis(c.x,c.w))drawCrate(c,tg===c); drawWorm4(); }

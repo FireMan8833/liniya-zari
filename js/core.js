@@ -37,7 +37,7 @@ function getSave(){try{return JSON.parse(localStorage.getItem('lz_save')||'null'
 function setSave(o){localStorage.setItem('lz_save',JSON.stringify(o))}
 
 // ----- изображения
-const IMG={}; const IMG_LIST=['cover','city','planet','crash','fault','bg_hot','bg_cold','ending','hero','sky1','sky2','sky3','tex1','tex2','tex3','tex4','p_irma','p_avram','p_sola'];
+const IMG={}; const IMG_LIST=['cover','city','planet','crash','fault','bg_hot','bg_cold','ending','hero','sky1','sky2','sky3','tex1','tex2','tex3','tex4','p_irma','p_avram','p_sola','sola_full','recv'];
 function loadImages(){return Promise.all(IMG_LIST.map(n=>new Promise(r=>{const i=new Image();i.onload=()=>{IMG[n]=i;r()};i.onerror=()=>r();i.src=(window.ASSETS_IMG&&ASSETS_IMG[n])||('img/'+n+'.jpg');}))).then(()=>{ if(IMG.bg_hot&&!IMG.sky4)IMG.sky4=IMG.bg_hot; });}
 function drawCover(img,x,y,w,h,zoom=1,px=0.5,py=0.5,c=ctx){ if(!img)return; const s=Math.max(w/img.width,h/img.height)*zoom;
   const dw=img.width*s,dh=img.height*s; c.drawImage(img,x+(w-dw)*px,y+(h-dh)*py,dw,dh);}

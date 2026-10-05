@@ -2,7 +2,7 @@
 // ===== экраны: заставка, меню, главы, ролик, пауза, итоги, финал; главный цикл =====
 let STATE='loading', ST={t:0};
 const IS_ELECTRON=/Electron/i.test(navigator.userAgent);
-const VERSION='v0.5.1';
+const VERSION='v0.5.2';
 if(!SETTINGS.fx)SETTINGS.fx='high';
 function setState(s,o={}){ STATE=s; ST=Object.assign({t:0,sel:0},o); MOUSE.click=false; }
 function loadSave(){ return Object.assign({chapter:0,cp:0,unlocked:0,shards:[],done:false,deaths:0,time:0},getSave()||{}); }
@@ -141,9 +141,9 @@ function screenGame(dt){ if(INPUT.hit('pause')){ setState('pause'); AUD.setDuck(
   let sdt=dt; if(W.slowT>0){ W.slowT-=dt; sdt=dt*0.35; } if(W.P.dead&&W.P.dead<0.3)sdt=dt*0.5;
   ACC+=sdt; const STEP=1/120; let n=0; while(ACC>=STEP&&n<14){ if(n>0){ INPUT.prev=INPUT.cur; INPUT.tap=null; } stepWorld(STEP); ACC-=STEP; n++; } if(n>=14)ACC=0;
   updateFx(sdt); updateCamera(dt); VOICE.update(dt);
-  const L=LV, P=W.P; AUD.ambient('s_amb_train',L.train?0.22:0); AUD.ambient('s_amb_fire',(W.wall.active?0.8:0)+(L.heat?0.18:0)+(L.braziers.some(b=>Math.abs(b.x-P.x)<200)?0.3:0)); AUD.ambient('s_amb_wind',L.id===3?0.4+W.gust*0.5:L.id===2?0.2+W.gust*0.7:0.05);
+  const L=LV, P=W.P; AUD.ambient('s_amb_train',L.train?0.22:0); AUD.ambient('s_amb_fire',(W.wall.active?0.8:0)+(L.heat?0.1:0)+(L.braziers.some(b=>Math.abs(b.x-P.x)<200)?0.3:0)); AUD.ambient('s_amb_wind',L.id===3?0.4+W.gust*0.5:L.id===2?0.2+W.gust*0.7:L.id===4?0.18:0.05);
   if(L.zips.length)AUD.ambient('s_zip',P.zip?0.6:0);
-  if(L.crates.length)AUD.ambient('s_drag',(W.dragSnd>0?0.55:0)); if(L.id===4)AUD.ambient('s_amb_wind',0.18);
+  if(L.crates.length)AUD.ambient('s_drag',(W.dragSnd>0?0.55:0));
   if(W.gustWarn&&!W.gustWarnPrev)AUD.play('s_gust',{vol:.7}); W.gustWarnPrev=W.gustWarn;
   W.time_total=(W.time_total||0)+dt;
   if(W.finished&&!W.endT){ W.endT=0.001; AUD.play('s_checkpoint',{vol:.8}); shake(6); W.flash=0.4; if(L.goal.kind==='lever')VOICE.say(['l2_end']); }

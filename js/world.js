@@ -248,7 +248,7 @@ function updateMech(dt,I){ const L=LV; if(!L.crates.length&&!L.gates.length)retu
   // плиты: нажаты, пока на них стоит ящик
   for(const pl of L.plates){ const was=pl.on; pl.on=L.crates.some(c=>Math.abs(c.y+c.h-pl.y)<4&&Math.min(c.x+c.w,pl.x+pl.w)-Math.max(c.x,pl.x)>=30); if(pl.on!==was)sfx('s_plate',{vol:.7,rate:pl.on?1:0.8}); }
   // створки
-  for(const g of L.gates){ const tgt=(g.latch||L.plates.some(pl=>pl.link===g.id&&pl.on))?1:0; const o=g.open; g.open=tgt>o?Math.min(1,o+1.5*dt):Math.max(0,o-1.5*dt);
+  for(const g of L.gates){ const tgt=(g.latch||L.plates.some(pl=>pl.link===g.id&&pl.on))?1:0; const o=g.open; g.open=tgt>o?Math.min(1,o+1.5*dt):tgt<o?Math.max(0,o-1.5*dt):o;
     if(o!==g.open&&(g.open===1||g.open===0))sfx('s_gate',{vol:.5,rate:g.open?1.1:0.9}); if(o===0&&g.open>0||o===1&&g.open<1)sfx('s_gate',{vol:.6}); }
   for(const m of L.mirrors) if(m.flip)m.flip=Math.max(0,m.flip-dt);
   // ящики: физика, толкание, буксир

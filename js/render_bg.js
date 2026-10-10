@@ -41,6 +41,18 @@ function prepLevelArt(L){ const key='lv'+L.id; if(BG[key])return BG[key];
         mg.fillStyle='rgba(255,236,200,.35)'; mg.fillRect(x,620-h-w/2+1,w,2); }
       else if(k<0.75){ const h=r(160,300); mg.fillRect(x,620-h,8,h); mg.strokeStyle='#7a5034'; mg.lineWidth=2; mg.beginPath(); for(let y2=620;y2>620-h+20;y2-=34){ mg.moveTo(x-14,y2); mg.lineTo(x+22,y2-34); mg.moveTo(x+22,y2); mg.lineTo(x-14,y2-34);} mg.stroke(); mg.fillStyle='rgba(255,252,236,.85)'; mg.fillRect(x-24,620-h-6,56,4); }
       else { const w=r(120,200); mg.beginPath(); mg.moveTo(x,630); mg.lineTo(x+20,600); mg.lineTo(x+w*0.7,590); mg.lineTo(x+w,612); mg.lineTo(x+w,630); mg.fill(); for(let i=0;i<3;i++){ mg.beginPath(); mg.arc(x+30+i*45,630,14,0,7); mg.fill(); } } }
+  } else if(L.id===5){
+    // дальний план: силуэт города-ковчега — горы вагонов, башни, огоньки окон
+    for(let layer=0;layer<2;layer++){ const base=440+layer*50; fg.fillStyle=layer?'rgba(36,26,50,.92)':'rgba(70,52,92,.55)';
+      for(let x=-40;x<farW;x+=r(30,80)){ const h=r(40,layer?170:240), w=r(30,90); fg.fillRect(x,base-h,w,h+300); if(R()<0.3)fg.fillRect(x+w*0.4,base-h-r(30,90),r(4,10),r(30,90));
+        for(let i=0;i<4;i++){ if(R()<0.5){ fg.fillStyle=R()<0.4?'rgba(140,255,230,.55)':'rgba(255,180,100,.5)'; fg.fillRect(x+r(4,w-6),base-r(10,h),2,2); fg.fillStyle=layer?'rgba(36,26,50,.92)':'rgba(70,52,92,.55)'; } } } }
+    // средний план: фермы, трубы, огромные шестерни, цепи
+    for(let x=0;x<midW;x+=r(240,420)){ const k=R(); mg.fillStyle='#1a1424'; mg.strokeStyle='#1a1424';
+      if(k<0.3){ const h=r(200,340), w=r(40,60); mg.lineWidth=4; mg.strokeRect(x,620-h,w,h); mg.lineWidth=2; for(let yy=620-h;yy<620;yy+=w){ mg.beginPath(); mg.moveTo(x,yy); mg.lineTo(x+w,yy+w); mg.moveTo(x+w,yy); mg.lineTo(x,yy+w); mg.stroke(); } mg.fillRect(x-20,620-h-8,w+40,10); }
+      else if(k<0.55){ const rr=r(60,120), cy=620-rr-r(40,160); mg.beginPath(); for(let i=0;i<20;i++){ const an=i/20*Math.PI*2; const q=i%2?rr:rr*0.86; mg.lineTo(x+Math.cos(an)*q,cy+Math.sin(an)*q); } mg.fill(); mg.fillStyle='rgba(0,0,0,.4)'; mg.beginPath(); mg.arc(x,cy,rr*0.3,0,7); mg.fill(); }
+      else if(k<0.8){ const h=r(180,320); mg.fillRect(x,620-h,r(26,40),h); mg.fillRect(x-6,620-h,50,10); mg.fillStyle='rgba(140,255,230,.35)'; mg.fillRect(x+8,620-h+20,6,4); }
+      else { mg.lineWidth=2; mg.beginPath(); const x2=x+r(200,320), yy=r(200,320); mg.moveTo(x,yy); mg.quadraticCurveTo((x+x2)/2,yy+r(60,120),x2,yy); mg.stroke(); mg.fillRect(x-4,yy,8,620-yy); mg.fillRect(x2-4,yy,8,620-yy); } }
+    mg.fillStyle='#120c18'; mg.fillRect(0,610,midW,200);
   } else {
     for(let layer=0;layer<2;layer++){ const base=470+layer*40; fg.fillStyle=layer?'rgba(20,44,66,.85)':'rgba(40,70,100,.55)'; fg.beginPath(); fg.moveTo(0,720);
       for(let x=0;x<=farW;x+=r(30,90)){ const spike=R()<0.15; fg.lineTo(x,base-(spike?r(60,140):r(0,30))); } fg.lineTo(farW,720); fg.fill(); }
@@ -55,7 +67,7 @@ function prepLevelArt(L){ const key='lv'+L.id; if(BG[key])return BG[key];
   out.far=far; out.mid=mid; BG[key]=out; return out; }
 // облака/дымка: мягкие полосы
 const CLOUD=(()=>{ const c=mkCanvas(512,128), g=c.getContext('2d'); for(let i=0;i<40;i++){ const x=Math.random()*512, y=64+Math.random()*30-15, r=20+Math.random()*50; const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,'rgba(255,255,255,.35)'); gr.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=gr; g.fillRect(x-r,y-r,r*2,r*2); } return c; })();
-const SUNPOS={1:[0.27,0.4],2:[0.11,0.49],3:[0.05,0.72],4:[0.5,0.44]};
+const SUNPOS={1:[0.27,0.4],2:[0.11,0.49],3:[0.05,0.72],4:[0.5,0.44],5:[0.72,0.36]};
 function hex3(h){ const p=parseInt(h.slice(1),16); return [(p>>16)/255,((p>>8)&255)/255,(p&255)/255]; }
 // GPU-путь: всё небо и дальние слои рисуются одним шейдером (post.js, программа bg)
 function skyGL(L,cam){ const img=IMG[L.sky]; if(!img)return false; const t=W.time; const A=prepLevelArt(L); const pal=L.pal;
@@ -63,8 +75,8 @@ function skyGL(L,cam){ const img=IMG[L.sky]; if(!img)return false; const t=W.tim
   const ox=-(dw-VW)*u*0.9, oy=-(dh-VH)*0.5-clamp((cam.y-400)*0.04,-30,30); const sp=SUNPOS[L.id]; const sx=ox+sp[0]*dw, sy=oy+sp[1]*dh; L._sun=[sx,sy];
   const yShift=(p)=>-(cam.y-420)*p*0.6;
   Object.assign(BGP,{sky:img,skyR:[ox,oy,dw,dh],far:A.far,mid:A.mid,farR:[-cam.x*0.1-100,yShift(0.1),A.far.width,A.far.height],midR:[-cam.x*0.3-100,yShift(0.3)+20,A.mid.width,A.mid.height],
-    sun:[sx,sy],lid:L.id,t,camx:cam.x,pul:0.85+0.15*Math.sin(t*1.3),fogC:L._fog3||(L._fog3=hex3(pal.fog)),fogA:pal.fogA,cloudA:L.id===1?0.22:L.id===2?0.18:L.id===4?0.1:0.12,
-    g1c:L.id===1||L.id===4?[1,0.96,0.86]:[1,0.48,0.16],g1r:L.id===1?260:L.id===4?300:220,g1a:L.id===1?0.2:L.id===4?0.06:0.35,shC:L.id===1||L.id===4?[1,0.94,0.78]:[1,0.69,0.5],shA:0.9});
+    sun:[sx,sy],lid:L.id,t,camx:cam.x,pul:0.85+0.15*Math.sin(t*1.3),fogC:L._fog3||(L._fog3=hex3(pal.fog)),fogA:pal.fogA,cloudA:L.id===1?0.22:L.id===2?0.18:L.id===4||L.id===5?0.1:0.12,
+    g1c:L.id===1||L.id===4?[1,0.96,0.86]:[1,0.48,0.16],g1r:L.id===1?260:L.id===4?300:L.id===5?160:220,g1a:L.id===1?0.2:L.id===4?0.06:L.id===5?0.25:0.35,shC:L.id===1||L.id===4?[1,0.94,0.78]:[1,0.69,0.5],shA:0.9});
   FX.bg=1; return true; }
 function drawSky(L,cam){ if(POST.ok&&skyGL(L,cam))return; const img=IMG[L.sky]; const t=W.time;
   if(img){ const s=Math.max(VW/img.width,VH*1.12/img.height); const dw=img.width*s, dh=img.height*s; const u=clamp(cam.x/L.length,0,1);

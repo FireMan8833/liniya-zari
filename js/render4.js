@@ -39,7 +39,7 @@ function drawCrate(c,target){ const x=c.x,y=c.y,w=c.w,h=c.h; ctx.fillStyle='#6a4
   if(target){ const p=0.6+0.4*Math.sin(W.time*8); const [hx,hy]=grabPt(c,W.P); ctx.save(); ctx.globalCompositeOperation='lighter'; glow(GLOW.warm,hx,hy,30,0.5*p); ctx.restore(); } }
 function drawPlate(pl){ const y=pl.y; ctx.fillStyle='#2a1a10'; ctx.fillRect(pl.x-4,y-6,pl.w+8,8); ctx.fillStyle=pl.on?'#ffcf70':'#8a6a48'; ctx.fillRect(pl.x,y-(pl.on?3:7),pl.w,5);
   if(pl.on){ ctx.save(); ctx.globalCompositeOperation='lighter'; glow(GLOW.warm,pl.x+pl.w/2,y-4,pl.w*0.7,0.4); ctx.restore(); } }
-function drawGate(g){ const o=g.open; if(g.dir==='bridge'){ const w=g.w*o; ctx.fillStyle='#2a1a10'; ctx.fillRect(g.x-16,g.y-6,16,60); ctx.fillRect(g.x+g.w,g.y-6,16,60);
+function drawGate(g){ if(g.dir==='lift')return drawLift5(g); const o=g.open; if(g.dir==='bridge'){ const w=g.w*o; ctx.fillStyle='#2a1a10'; ctx.fillRect(g.x-16,g.y-6,16,60); ctx.fillRect(g.x+g.w,g.y-6,16,60);
     if(w>2){ ctx.fillStyle='#5a3e28'; ctx.fillRect(g.x,g.y,w,g.h); ctx.fillStyle='rgba(255,236,200,.85)'; ctx.fillRect(g.x,g.y,w,2); ctx.strokeStyle='#2a1a10'; ctx.lineWidth=2; ctx.beginPath(); for(let xx=g.x;xx<g.x+w-10;xx+=25){ ctx.moveTo(xx,g.y+g.h); ctx.lineTo(xx+12,g.y+g.h+18); ctx.lineTo(xx+25,g.y+g.h);} ctx.stroke(); } return; }
   const h=g.h*(1-o); ctx.fillStyle='#24160c'; ctx.fillRect(g.x-8,g.y-24,g.w+16,24); ctx.fillRect(g.x-8,g.y-24,6,g.h+24); ctx.fillRect(g.x+g.w+2,g.y-24,6,g.h+24);
   if(h>1){ ctx.fillStyle='#6a4a30'; ctx.fillRect(g.x,g.y,g.w,h); ctx.fillStyle='rgba(0,0,0,.35)'; for(let yy=g.y+12;yy<g.y+h;yy+=24)ctx.fillRect(g.x,yy,g.w,3); ctx.fillStyle='rgba(255,200,120,.8)'; ctx.fillRect(g.x+g.w/2-3,g.y+h-14,6,6); } }
@@ -106,5 +106,5 @@ function drawDecor4(L){ for(const d of L.decor){ if(d.k==='mtower'&&inVis(d.x-80
 function drawMechBack4(L){ for(const pl of L.plates) if(inVis(pl.x,pl.w))drawPlate(pl); for(const g of L.gates) if(inVis(g.x-20,g.w+40))drawGate(g);
   drawMirrorHint(L); for(const m of L.mirrors) if(inVis(m.x-40,80))drawMirror(m); for(const r of L.receivers) if(inVis(r.x-40,80))drawReceiver(r);
   for(const m of L.marks) if(inVis(m.x-30,60))drawMark(m);
-  for(const n of L.npcs){ if(!inVis(n.x-40,80))continue; const show=n.when==='camp'?W.sola!=='take':W.sola==='take'; if(show)drawSola(n); } }
+  for(const n of L.npcs){ if(!inVis(n.x-40,80))continue; if(n.k==='mara'){ drawMara(n); continue; } const show=n.when==='camp'?W.sola!=='take':W.sola==='take'; if(show)drawSola(n); } }
 function drawMechFront4(L,tg){ for(const p of L.pulls) if(inVis(p.x-30,140))drawPull(p,tg===p); for(const c of L.crates) if(inVis(c.x,c.w))drawCrate(c,tg===c); drawWorm4(); }

@@ -17,7 +17,7 @@ function buildWorld(li){ LV=JSON.parse(JSON.stringify(LEVELS[li])); LV.idx=li;
   for(const m of LV.movers){m.x0=m.x;m.y0=m.y;m.vx=0;m.vy=0;}
   LV.wheelPl=[]; for(const wh of LV.wheels){ for(let i=0;i<wh.n;i++)LV.wheelPl.push({wh,i,x:0,y:0,w:wh.pw,h:16,vx:0,vy:0,k:'gearpl'}); }
   for(const c of LV.crates){ c.x0=c.x; c.y0=c.y; c.pvx=0; c.pvy=0; c.vx=0; c.vy=0; c.k='box'; c.crate=1; c.onG=false; }
-  for(const g of LV.gates){ g.open=0; g.latch=false; } for(const r of LV.receivers){ r.ch=0; r.done=false; } for(const p of LV.pulls){ p.done=false; } for(const pl of LV.plates){ pl.on=false; }
+  for(const g of LV.gates){ g.open=0; g.latch=false; } for(const r of LV.receivers){ r.ch=0; r.done=false; } for(const p of LV.pulls){ p.done=false; } for(const pl of LV.plates){ pl.on=false; } W.flags={};
   W.worm={st:'idle',tr:0,t:0,x:0,sy:0}; W.sola=null; W.choice=null; W.beam=null;
   LV.colStatic=LV.solids.filter(s=>!s.hollow); LV.colStatic.push({x:-60,y:-2000,w:60,h:4000,k:'bound',slip:1},{x:LV.length,y:-2000,w:60,h:4000,k:'bound',slip:1});
   updateDynamics(0); }
@@ -48,7 +48,7 @@ function colliders(){ const out=LV.colStatic.slice();
   for(const m of LV.movers) out.push(m); for(const f of LV.floes) out.push(f); for(const p of LV.wheelPl) out.push(Object.assign(p,{oneWay:1}));
   for(const g of LV.gates){ const c=gateCol(g); if(c)out.push(c); } for(const c of LV.crates) out.push(c);
   return out; }
-function gateCol(g){ const c=g._c||(g._c={k:g.dir==='bridge'?'gatebr':'gate',gate:g,nowall:1}); if(g.dir==='bridge'){ const w=g.w*g.open; if(w<6)return null; Object.assign(c,{x:g.x,y:g.y,w,h:g.h}); } else { const h=g.h*(1-g.open); if(h<4)return null; Object.assign(c,{x:g.x,y:g.y,w:g.w,h}); } return c; }
+function gateCol(g){ const c=g._c||(g._c={k:g.dir==='bridge'?'gatebr':g.dir==='lift'?'liftpl':'gate',gate:g,nowall:1}); if(g.dir==='lift'){ Object.assign(c,{x:g.x,y:g.y-g.h*g.open,w:g.w,h:18,oneWay:1,vx:0,vy:0}); return c; } if(g.dir==='bridge'){ const w=g.w*g.open; if(w<6)return null; Object.assign(c,{x:g.x,y:g.y,w,h:g.h}); } else { const h=g.h*(1-g.open); if(h<4)return null; Object.assign(c,{x:g.x,y:g.y,w:g.w,h}); } return c; }
 const ov=(ax,ay,aw,ah,b)=>ax<b.x+b.w&&ax+aw>b.x&&ay<b.y+b.h&&ay+ah>b.y;
 function moveCollide(P,dx,dy,cols){ const hw=PHY.PW/2, H=PHY.PH; let hitX=0, landed=null, hitHead=false;
   P.x+=dx; for(const c of cols){ if(c.oneWay)continue; if(ov(P.x-hw,P.y-H,PHY.PW,H-0.5,c)){ if(dx>0){P.x=c.x-hw-0.01;hitX=1;} else if(dx<0){P.x=c.x+c.w+hw+0.01;hitX=-1;} else { const mid=c.x+c.w/2; if(P.x<mid){P.x=c.x-hw-0.01;hitX=1;} else {P.x=c.x+c.w+hw+0.01;hitX=-1;} } if(hitX&&c.h>=40&&!c.slip&&!c.nowall)P.wallC=hitX; } }
@@ -77,7 +77,7 @@ function findGrab(P){ if(!LV.crates.length&&!LV.pulls.length)return null; const 
   const test=o=>{ const [x,y]=grabPt(o,P); const dx=x-gx, dy=y-gy, d=Math.hypot(dx,dy); if(d>PHY.ROPE||d<34)return; if(dx*P.face<-24)return; if(occluded(gx,gy,x,y))return; const s=d-(dx*P.face>0?80:0); if(s<bs){bs=s;best=o;} };
   for(const c of LV.crates) if(P.ground!==c)test(c); for(const p of LV.pulls) if(!p.done)test(p); return best; }
 function fireGrab(P,o){ const [gx,gy]=gripPt(P); W.hook={x:gx,y:gy,a:{x:0,y:0},grab:o,miss:false,t:0}; sfx('s_grapple_fire',{vol:.7,rate:1.08}); W.ropeV.init=false; }
-function fireLink(id){ if(!id)return; for(const g of LV.gates) if(g.id===id&&!g.latch){ g.latch=true; sfx('s_gate',{vol:.8}); shake(2); }
+function fireLink(id){ if(!id)return; if(W.flags)W.flags[id]=true; for(const g of LV.gates) if(g.id===id&&!g.latch){ g.latch=true; sfx('s_gate',{vol:.8}); shake(2); }
   for(const m of LV.mirrors) if(m.id===id&&m.alt&&m.t!==m.alt){ m.t=m.alt; m.flip=0.5; sfx('s_gate',{vol:.6,rate:1.3}); } }
 function fireHook(P){ const a=findAnchor(P); const [gx,gy]=gripPt(P);
   if(a){ W.hook={x:gx,y:gy,a,miss:false,t:0}; sfx('s_grapple_fire',{vol:.7}); }
@@ -244,11 +244,16 @@ function shadeAt(P){ const L=LV, t=W.time; for(const s of L.shade)if(P.x>s[0]&&P
   for(const m of L.shadeMov){ const cx=m.x+m.amp*Math.sin(t/m.per*Math.PI*2+(m.ph||0)); m.cx=cx; if(P.x>cx&&P.x<cx+m.w)return true; }
   for(const c of L.crates){ if(P.x>c.x-c.h*0.85&&P.x<c.x+8&&P.y>=c.y+c.h-6&&P.y<c.y+c.h+40)return true; } // тень ящика падает влево (солнце справа-сверху)
   return false; }
+function liftRider(g,top){ const P=W.P; return !P.dead&&P.onGround&&Math.abs(P.y-top)<3&&P.x>g.x-4&&P.x<g.x+g.w+4; }
+function linkOn(id){ return !!(W.flags&&W.flags[id])||LV.plates.some(pl=>pl.link===id&&pl.on); }
 function updateMech(dt,I){ const L=LV; if(!L.crates.length&&!L.gates.length)return; const P=W.P;
   // плиты: нажаты, пока на них стоит ящик
   for(const pl of L.plates){ const was=pl.on; pl.on=L.crates.some(c=>Math.abs(c.y+c.h-pl.y)<4&&Math.min(c.x+c.w,pl.x+pl.w)-Math.max(c.x,pl.x)>=30); if(pl.on!==was)sfx('s_plate',{vol:.7,rate:pl.on?1:0.8}); }
   // створки
-  for(const g of L.gates){ const tgt=(g.latch||L.plates.some(pl=>pl.link===g.id&&pl.on))?1:0; const o=g.open; g.open=tgt>o?Math.min(1,o+1.5*dt):tgt<o?Math.max(0,o-1.5*dt):o;
+  for(const g of L.gates){ let tgt=(g.all?g.all.every(linkOn):(g.latch||linkOn(g.id)))?1:0; const o=g.open;
+    if(g.cargo){ const top=g.y-g.h*o, gc=gateCol(g); g.load=L.crates.some(c=>Math.abs(c.y+c.h-top)<5&&Math.min(c.x+c.w,g.x+g.w)-Math.max(c.x,g.x)>=40); g.rider=liftRider(g,top);
+      const want=g.load&&g.rider; g.wt=want?(g.wt||0)+dt:0; tgt=(g.wt>0.6||(o>0&&(g.load||g.rider)))?1:0; } const sp=(g.spd||1.5)*dt; g.open=tgt>o?Math.min(1,o+sp):tgt<o?Math.max(0,o-sp):o; g.vy=g.dir==='lift'&&dt?-(g.open-o)*g.h/dt:0;
+    if(g.dir==='lift'&&g.open!==o){ const d=(g.open-o)*g.h, top=g.y-g.h*o; for(const c of L.crates){ if(Math.abs(c.y+c.h-top)<5&&c.x+c.w>g.x+4&&c.x<g.x+g.w-4){ c.y-=d; c.pvy=0; } } if(liftRider(g,top)){ P.y-=d; P.vy=Math.max(0,P.vy); } if(Math.random()<dt*8)sfx('s_chain',{vol:.25,rate:.8}); }
     if(o!==g.open&&(g.open===1||g.open===0))sfx('s_gate',{vol:.5,rate:g.open?1.1:0.9}); if(o===0&&g.open>0||o===1&&g.open<1)sfx('s_gate',{vol:.6}); }
   for(const m of L.mirrors) if(m.flip)m.flip=Math.max(0,m.flip-dt);
   // ящики: физика, толкание, буксир
@@ -293,7 +298,7 @@ function traceBeam(x,y,dx,dy){ const L=LV; const pts=[[x,y]]; const cols=LV.colS
     if(kind==='r')rec=hit; if(kind==='w')worm=true; break; }
   return {pts,rec,worm}; }
 function beamStep(P,dt){ W.beam=null; const L=LV;
-  if(P.cloak&&!P.dead){ const lit=!W.inShade; P.cloak.lit=lit; if(lit){ const a=P.cloak.up?0.7:0; const dx=Math.cos(a)*P.face, dy=-Math.sin(a); W.beam=traceBeam(P.x+P.face*14,P.y-40,dx,dy);
+  if(P.cloak&&!P.dead){ const lit=LV.litOnly?LV.sunz.some(z=>P.x>z[0]&&P.x<z[1]):!W.inShade; P.cloak.lit=lit; if(lit){ const a=P.cloak.up?0.7:0; const dx=Math.cos(a)*P.face, dy=-Math.sin(a); W.beam=traceBeam(P.x+P.face*14,P.y-40,dx,dy);
       if((W.cloakSnd=(W.cloakSnd||0)-dt)<=0){ W.cloakSnd=0.9; sfx('s_cloak',{vol:.35}); } } }
   const hitR=W.beam&&W.beam.rec;
   for(const r of L.receivers){ if(r.done)continue; if(r===hitR){ r.ch+=dt; if(r.ch>=r.need){ r.done=true; fireLink(r.link); sfx('s_receiver',{vol:.85}); W.flash=0.15; for(let i=0;i<20;i++)addP({x:r.x,y:r.y,vx:rnd(-220,220),vy:rnd(-220,120),life:rnd(.3,.7),size:rnd(1.2,2.6),type:'spark'}); } }
@@ -302,10 +307,10 @@ function beamStep(P,dt){ W.beam=null; const L=LV;
 // ---- черви: шум шагов и жар будят червя под песком
 function sandRange(x){ for(const r of LV.sand) if(x>=r[0]&&x<=r[1])return r; return null; }
 function wormStep(P,dt){ const wm=W.worm; const r=sandRange(P.x); const onSand=r&&P.onGround&&P.ground&&P.ground.k==='dune';
-  if(wm.st==='idle'){ let d; if(P.dead)d=-0.5; else if(onSand){ const sp=Math.abs(P.vx); d=sp>120?0.5:sp>8?0.05:-0.3; if(d>0)d*=(0.55+P.heat*0.9); if(P.landSand){ wm.tr+=P.landSand; P.landSand=0; } } else if(r&&!P.onGround)d=0; else d=-0.35;
+  if(wm.st==='idle'){ let d; if(P.dead)d=-0.5; else if(onSand){ const sp=Math.abs(P.vx); d=sp>120?1.5:sp>8?0.05:-0.3; if(d>0)d*=(sp>120?0.8+P.heat*0.5:0.55+P.heat*0.9); if(P.landSand){ wm.tr+=P.landSand; P.landSand=0; } } else if(r&&!P.onGround)d=0; else d=-0.35;
     if(d>0&&assistOn())d*=0.6; wm.tr=clamp(wm.tr+d*dt,0,1);
-    if(wm.tr>=1&&r){ wm.st='warn'; wm.t=0; wm.r=r; wm.sy=r[2]; wm.x=clamp(P.x-P.face*230,r[0]+20,r[1]-20); sfx('s_worm_rumble',{vol:.9}); shake(2); } }
-  else if(wm.st==='warn'){ wm.t+=dt; const rr=wm.r; const tx=clamp(P.x,rr[0]+10,rr[1]-10); const st=340*dt; wm.x+=clamp(tx-wm.x,-st,st); if(Math.random()<dt*30)shake(0.3);
+    if(wm.tr>=1&&r){ wm.st='warn'; wm.t=0; wm.r=r; wm.sy=r[2]; wm.x=clamp(P.x-P.face*120,r[0]+20,r[1]-20); sfx('s_worm_rumble',{vol:.9}); shake(2); } }
+  else if(wm.st==='warn'){ wm.t+=dt; const rr=wm.r; const tx=clamp(P.x,rr[0]+10,rr[1]-10); const st=380*dt; wm.x+=clamp(tx-wm.x,-st,st); if(Math.random()<dt*30)shake(0.3);
     if(Math.random()<dt*40)addP({x:wm.x+rnd(-40,40),y:wm.sy-2,vx:rnd(-60,60),vy:rnd(-140,-30),life:rnd(.3,.6),size:rnd(2,4),type:'dust'});
     if(wm.t>=0.9){ wm.st='burst'; wm.t=0; sfx('s_worm_burst',{vol:1}); shake(6); W.shock.push({x:wm.x,y:wm.sy,t:0,r:160});
       for(let i=0;i<40;i++)addP({x:wm.x+rnd(-30,30),y:wm.sy,vx:rnd(-260,260),vy:rnd(-700,-200),life:rnd(.5,1.1),size:rnd(3,7),type:'dust'});

@@ -56,13 +56,14 @@ function drawSolid(s,L){ const pal=L.pal; const t=W.time; const bot=Math.min(s.y
     else { const g=ctx.createLinearGradient(s.x,0,s.x+s.w,0); for(let i=0;i<=6;i++)g.addColorStop(i/6,i%2?'rgba(200,240,255,.5)':'rgba(200,240,255,.05)'); ctx.fillStyle=g; ctx.fillRect(s.x,s.y,s.w,5); ctx.fillStyle='rgba(255,255,255,.7)'; ctx.fillRect(s.x+((t*40)%s.w),s.y,30,2); }
     break; }
   case 'bound': break;
+  case 'hull': case 'cover5': case 'grate': drawSolid5(s,L,h); break;
   case 'salt': case 'dune': case 'rock': case 'mtower': drawSolid4(s,L,h); break;
   default: ctx.fillStyle=pat(L.tex,0.3); ctx.fillRect(s.x,s.y,s.w,h); } }
 function drawCrumble(c,L){ if(c.st>=2)return; let ox=0,oy=0; if(c.st===1){ ox=rnd(-1.5,1.5); oy=c.t*6; } ctx.save(); ctx.translate(ox,oy); ctx.fillStyle=pat(L.tex,0.3); ctx.fillRect(c.x+1,c.y,c.w-2,c.h); ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(c.x+1,c.y,c.w-2,c.h);
   ctx.strokeStyle='rgba(255,170,90,.55)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(c.x+8,c.y); ctx.lineTo(c.x+c.w*0.4,c.y+c.h*0.6); ctx.lineTo(c.x+c.w*0.7,c.y+c.h*0.3); ctx.lineTo(c.x+c.w-6,c.y+c.h); ctx.stroke(); rimTop(c.x+1,c.y,c.w-2,L.pal.rim,1.2); ctx.restore(); }
 function drawMover(m,L){ ctx.strokeStyle='#120c18'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(m.x+12,m.y); ctx.lineTo(m.x+m.w/2,m.y-180); ctx.lineTo(m.x+m.w-12,m.y); ctx.stroke(); ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(m.x+m.w/2,m.y-180); ctx.lineTo(m.x+m.w/2,m.y-600); ctx.stroke();
   ctx.fillStyle=pat(L.tex,0.25); ctx.fillRect(m.x,m.y,m.w,m.h); shadeRect(m.x,m.y,m.w,m.h,'rgba(255,255,255,.1)','rgba(0,0,0,.6)'); rimTop(m.x,m.y,m.w,L.pal.rim,1.5); }
-function drawFloe(f,L){ ctx.save(); const bob=Math.sin(W.time*2+f.x)*1.5; ctx.translate(0,bob); ctx.fillStyle='rgba(180,225,250,.92)'; ctx.beginPath(); ctx.moveTo(f.x,f.y); ctx.lineTo(f.x+f.w,f.y); ctx.lineTo(f.x+f.w-8,f.y+f.h); ctx.lineTo(f.x+6,f.y+f.h+4); ctx.closePath(); ctx.fill();
+function drawFloe(f,L){ if(L.id===5)return drawPontoon(f,L); ctx.save(); const bob=Math.sin(W.time*2+f.x)*1.5; ctx.translate(0,bob); ctx.fillStyle='rgba(180,225,250,.92)'; ctx.beginPath(); ctx.moveTo(f.x,f.y); ctx.lineTo(f.x+f.w,f.y); ctx.lineTo(f.x+f.w-8,f.y+f.h); ctx.lineTo(f.x+6,f.y+f.h+4); ctx.closePath(); ctx.fill();
   ctx.fillStyle=pat(L.tex,0.35); ctx.globalAlpha=0.5; ctx.fill(); ctx.globalAlpha=1; ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fillRect(f.x+2,f.y,f.w-4,3); if(f.sink>0){ ctx.fillStyle=`rgba(255,255,255,${clamp(f.sink/40,0,.6)})`; ctx.fillRect(f.x+20,f.y+4,2,f.h-6); ctx.fillRect(f.x+60,f.y+2,2,f.h-4); } ctx.restore(); }
 function drawWater(w){ const t=W.time; const g=ctx.createLinearGradient(0,w.y,0,w.y+260); g.addColorStop(0,'rgba(30,70,100,.95)'); g.addColorStop(1,'rgba(4,10,20,1)'); ctx.fillStyle=g; ctx.fillRect(w.x1,w.y,w.x2-w.x1,300);
   ctx.strokeStyle='rgba(170,220,255,.35)'; ctx.lineWidth=1.5; for(let i=0;i<4;i++){ ctx.beginPath(); for(let x=w.x1;x<=w.x2;x+=20)ctx.lineTo(x,w.y+4+i*10+Math.sin(x*0.03+t*(1.5+i*0.3))*2); ctx.stroke(); } }

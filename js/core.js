@@ -37,7 +37,7 @@ function getSave(){try{return JSON.parse(localStorage.getItem('lz_save')||'null'
 function setSave(o){localStorage.setItem('lz_save',JSON.stringify(o))}
 
 // ----- изображения
-const IMG={}; const IMG_LIST=['cover','city','planet','crash','fault','bg_hot','bg_cold','ending','hero','sky1','sky2','sky3','tex1','tex2','tex3','tex4','p_irma','p_avram','p_sola','sola_full','recv'];
+const IMG={}; const IMG_LIST=['cover','city','planet','crash','fault','bg_hot','bg_cold','ending','hero','sky1','sky2','sky3','tex1','tex2','tex3','tex4','p_irma','p_avram','p_sola','sola_full','recv','sky5','tex5','p_mara','p_veil','mara_full','cine1','cine2','cine3','cine4','cine5','cine6'];
 function loadImages(){return Promise.all(IMG_LIST.map(n=>new Promise(r=>{const i=new Image();i.onload=()=>{IMG[n]=i;r()};i.onerror=()=>r();i.src=(window.ASSETS_IMG&&ASSETS_IMG[n])||('img/'+n+'.jpg');}))).then(()=>{ if(IMG.bg_hot&&!IMG.sky4)IMG.sky4=IMG.bg_hot; });}
 function drawCover(img,x,y,w,h,zoom=1,px=0.5,py=0.5,c=ctx){ if(!img)return; const s=Math.max(w/img.width,h/img.height)*zoom;
   const dw=img.width*s,dh=img.height*s; c.drawImage(img,x+(w-dw)*px,y+(h-dh)*py,dw,dh);}
@@ -117,17 +117,17 @@ const VOICE={queue:[],cur:null,t:0,
     if(!this.cur&&this.queue.length){ const id=this.queue.shift(); const v=AUD.voice(id); const L=(window.ASSETS_LINES||{})[id]||{s:'',t:''};
       this.cur={id,dur:v.dur,src:v.src,speaker:L.s,text:L.t}; this.t=0; AUD.setDuck(0.38);} },
   busy(){return !!this.cur||this.queue.length>0} };
-const SPEAKER={narr:'',irma:'ИРМА',avram:'АВРАМ · РАЦИЯ',sola:'СОЛА'};
+const SPEAKER={narr:'',irma:'ИРМА',avram:'АВРАМ · РАЦИЯ',sola:'СОЛА',mara:'МАРА',veil:'ВЕЙЛ · ГРОМКОГОВОРИТЕЛЬ'};
 function drawSubtitle(alphaMul=1,yBase=VH-70,portraits=false){ const c=VOICE.cur; if(!c||!SETTINGS.subs)return; const a=clamp(Math.min(VOICE.t/0.25,(c.dur+0.35-VOICE.t)/0.3),0,1)*alphaMul; if(a<=0)return;
   const g=U; g.save(); g.globalAlpha=a; const narr=!SPEAKER[c.speaker];
   const font=narr?`italic 500 21px ${FONT_U}`:`500 21px ${FONT_U}`; g.font=font; const lines=wrapText(c.text,740); const lh=29;
   let tw=0; for(const l of lines) tw=Math.max(tw,g.measureText(l).width); tw=Math.ceil(tw);
-  const pimg=portraits&&(c.speaker==='irma'?IMG.p_irma:c.speaker==='avram'?IMG.p_avram:c.speaker==='sola'?IMG.p_sola:null); const ps=84, pad=18, gap=18;
+  const pimg=portraits&&(c.speaker==='irma'?IMG.p_irma:c.speaker==='avram'?IMG.p_avram:c.speaker==='sola'?IMG.p_sola:c.speaker==='mara'?IMG.p_mara:c.speaker==='veil'?IMG.p_veil:null); const ps=84, pad=18, gap=18;
   const th=lines.length*lh-8; const ih=Math.max(pimg?ps:0,th); const pw=Math.max(420,pad*2+(pimg?ps+gap:0)+tw), ph=ih+pad*2+(narr?0:6);
-  const x=Math.round(VW/2-pw/2), y=Math.round(yBase+44-ph); const col=c.speaker==='irma'?UI.accent:c.speaker==='avram'?UI.cold:c.speaker==='sola'?'#f4e6a8':UI.brass;
+  const x=Math.round(VW/2-pw/2), y=Math.round(yBase+44-ph); const col=c.speaker==='irma'?UI.accent:c.speaker==='avram'?UI.cold:c.speaker==='sola'?'#f4e6a8':c.speaker==='mara'?'#ffb27a':c.speaker==='veil'?'#8fe8dc':UI.brass;
   panel(g,x,y,pw,ph,{title:SPEAKER[c.speaker]||null,titleCol:col,c:12});
   let tx=x+pad; if(pimg){ const px=x+pad, py=y+Math.round((ph-ps)/2)+(narr?0:3); g.save(); chamferPath(g,px,py,ps,ps,8); g.clip(); g.drawImage(pimg,px,py,ps,ps);
-      if(c.speaker==='avram'){ g.globalAlpha=a*(0.12+0.05*Math.sin(VOICE.t*40)); g.fillStyle='#9fd0ff'; for(let yy=0;yy<ps;yy+=3)g.fillRect(px,py+yy,ps,1);} g.restore();
+      if(c.speaker==='avram'||c.speaker==='veil'){ g.globalAlpha=a*(0.12+0.05*Math.sin(VOICE.t*40)); g.fillStyle='#9fd0ff'; for(let yy=0;yy<ps;yy+=3)g.fillRect(px,py+yy,ps,1);} g.restore();
     g.strokeStyle=col; g.lineWidth=1.6; chamferPath(g,px+.5,py+.5,ps-1,ps-1,8); g.stroke(); tx=px+ps+gap; }
   g.font=font; g.textBaseline='top'; const ty=y+Math.round((ph-th)/2)+(narr?0:3)-4; const cx=narr&&!pimg;
   g.textAlign=cx?'center':'left'; lines.forEach((l,i)=>textShadowed(g,l,cx?x+pw/2:tx,ty+i*lh,narr?'#f1dcc0':UI.ink)); g.restore(); }

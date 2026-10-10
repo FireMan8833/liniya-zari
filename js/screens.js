@@ -2,7 +2,7 @@
 // ===== экраны: заставка, меню, главы, ролик, пауза, итоги, финал; главный цикл =====
 let STATE='loading', ST={t:0};
 const IS_ELECTRON=/Electron/i.test(navigator.userAgent);
-const VERSION='v0.5.3';
+const VERSION='v0.6.0';
 if(!SETTINGS.fx)SETTINGS.fx='high';
 function setState(s,o={}){ STATE=s; ST=Object.assign({t:0,sel:0},o); MOUSE.click=false; }
 function loadSave(){ return Object.assign({chapter:0,cp:0,unlocked:0,shards:[],done:false,deaths:0,time:0},getSave()||{}); }
@@ -43,7 +43,7 @@ function bgMenu(img='cover'){ const t=performance.now()/1000; const mx=(MOUSE.x/
   Object.assign(FX,{bloom:0.5,thr:0.7,vign:0.45,grain:0.05,sat:1.05}); }
 function drawTitle(x,y,size=84,a=1){ const g=U; g.save(); g.globalAlpha=a; g.textAlign='left'; setFont(g,700,size,FONT_T); g.letterSpacing=(size*0.05)+'px';
   g.shadowColor='rgba(255,140,60,.45)'; g.shadowBlur=24; g.fillStyle='#fff3e4'; g.fillText('ЛИНИЯ ЗАРИ',x,y); g.shadowBlur=0;
-  const w=g.measureText('ЛИНИЯ ЗАРИ').width; g.letterSpacing='5px'; setFont(g,700,13,FONT_U); g.fillStyle=UI.accent; g.fillText('ЧАСТЬ I  ·  ЧЕТЫРЕ ГЛАВЫ',x+4,y+34);
+  const w=g.measureText('ЛИНИЯ ЗАРИ').width; g.letterSpacing='5px'; setFont(g,700,13,FONT_U); g.fillStyle=UI.accent; g.fillText('ЧАСТЬ I  ·  ПЯТЬ ГЛАВ',x+4,y+34);
   g.strokeStyle='rgba(201,138,75,.7)'; g.lineWidth=1.2; g.beginPath(); g.moveTo(x+240,y+29); g.lineTo(x+Math.max(300,w-20),y+29); g.stroke(); g.restore(); }
 function screenSplash(){ ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,VH); ST.t+=FDT; const a=clamp(ST.t/1.2,0,1); const g=U;
   g.save(); g.globalAlpha=a; g.textAlign='center'; setFont(g,700,64,FONT_T); g.letterSpacing='5px'; g.fillStyle='#fff1e0'; g.fillText('ЛИНИЯ ЗАРИ',VW/2,VH/2-14); g.letterSpacing='0px';
@@ -121,8 +121,8 @@ function screenIntro(dt){ if(!ST.init){ ST.init=true; ST.i=-1; ST.next=0.8; ST.s
   letterbox(); drawSubtitle(1,VH-108);
   if(skipper(dt)||(ST.i>=INTRO.length&&ST.t>=ST.next)){ VOICE.clear(); startChapter(0,0); } }
 // ---- карточка главы
-const CH_LINE={0:'Хвост города плавится. Нужно добраться до головы состава.',1:'Старый мост через каньон. Ветер с ночной стороны.',2:'Вечная ночь. Стрелка обходного пути вмёрзла в лёд.',3:'Пекло. Прямой путь колонистов через вечный полдень.'};
-function startChapter(li,cp=0,fromContinue=false){ setState('card',{li,cp}); AUD.stopAmbient(); }
+const CH_LINE={0:'Хвост города плавится. Нужно добраться до головы состава.',1:'Старый мост через каньон. Ветер с ночной стороны.',2:'Вечная ночь. Стрелка обходного пути вмёрзла в лёд.',4:'Мёртвый город-ковчег. Кто-то внутри всё ещё зажигает огонь.',3:'Пекло. Прямой путь колонистов через вечный полдень.'};
+function startChapter(li,cp=0,fromContinue=false){ if(LEVELS[li].id===5&&cp===0&&IMG.cine1){ setState('cine5',{li}); AUD.stopAmbient(); return; } setState('card',{li,cp}); AUD.stopAmbient(); }
 function screenCard(dt){ const L=LEVELS[ST.li]; if(!ST.init){ ST.init=true; AUD.play('s_checkpoint',{vol:.5,rate:.7}); VOICE.clear(); if(ST.li===0&&ST.cp===0)VOICE.say(['c1']); if(LEVELS[ST.li].id===4&&ST.cp===0)VOICE.say(['e2']); }
   ST.t+=dt; VOICE.update(dt); const u=clamp(ST.t/5,0,1); ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,VH); ctx.globalAlpha=clamp(ST.t/1.2,0,1); drawCover(IMG[L.sky],0,0,VW,VH,lerp(1.05,1.15,u),0.3+u*0.2,0.5); ctx.globalAlpha=1;
   const gr=ctx.createLinearGradient(0,0,0,VH); gr.addColorStop(0,'rgba(0,0,0,.25)'); gr.addColorStop(.5,'rgba(0,0,0,.45)'); gr.addColorStop(1,'rgba(0,0,0,.7)'); ctx.fillStyle=gr; ctx.fillRect(0,0,VW,VH);
@@ -146,10 +146,10 @@ function screenGame(dt){ if(INPUT.hit('pause')){ setState('pause'); AUD.setDuck(
   if(L.crates.length)AUD.ambient('s_drag',(W.dragSnd>0?0.55:0));
   if(W.gustWarn&&!W.gustWarnPrev)AUD.play('s_gust',{vol:.7}); W.gustWarnPrev=W.gustWarn;
   W.time_total=(W.time_total||0)+dt;
-  if(W.finished&&!W.endT){ W.endT=0.001; AUD.play('s_checkpoint',{vol:.8}); shake(6); W.flash=0.4; if(L.goal.kind==='lever')VOICE.say(['l2_end']); }
+  if(W.finished&&!W.endT){ W.endT=0.001; AUD.play('s_checkpoint',{vol:.8}); shake(6); W.flash=0.4; if(L.goal.kind==='lever')VOICE.say(['l2_end']); if(L.goal.fin)VOICE.say(L.goal.fin); }
   if(W.endT){ W.endT+=dt; }
   safeRun(()=>renderGame(dt),ctx); safeRun(()=>drawHUD(dt),U);
-  if(W.endT){ FX.fade=clamp((W.endT-1.6)/1.4,0,1); if(W.endT>3.2&&!(L.goal.kind==='lever'&&VOICE.busy()&&W.endT<9)){ AUD.stopAmbient(); const st={time:W.time,deaths:W.deaths,shards:L.shards.filter(s=>s.taken).length,total:L.shards.length};
+  if(W.endT){ if(L.goal.fin&&(VOICE.busy()||W.endT<2)){ W.finT=W.endT; } FX.fade=clamp((W.endT-(L.goal.fin?(W.finT||0)+0.3:1.6))/1.4,0,1); if(W.endT>(L.goal.fin?Math.max(3.2,(W.finT||0)+1.8):3.2)&&!((L.goal.kind==='lever'||L.goal.fin)&&VOICE.busy()&&W.endT<(L.goal.fin?20:9))){ AUD.stopAmbient(); const st={time:W.time,deaths:W.deaths,shards:L.shards.filter(s=>s.taken).length,total:L.shards.length};
       SAVE.unlocked=Math.max(SAVE.unlocked||0,Math.min(LEVELS.length-1,LV.idx+1)); SAVE.chapter=Math.min(LEVELS.length-1,LV.idx+1); SAVE.cp=0; if(LV.idx===LEVELS.length-1)SAVE.done=true; persist();
       setState('chapterEnd',{li:LV.idx,stats:st}); } } }
 function screenPause(){ renderGame(0); ctx.setTransform(RS,0,0,RS,0,0); overlayDim(.55); FX.dist=0; FX.heat=0; const g=U;
@@ -167,7 +167,7 @@ function screenChapterEnd(dt){ const L=LEVELS[ST.li]; ST.t+=dt; VOICE.update(dt)
   Object.assign(FX,{bloom:0.5,thr:0.7,vign:0.5});
   if(ST.t>1.5&&(INPUT.hit('confirm')||MOUSE.click)){ MOUSE.click=false; if(ST.li<LEVELS.length-1)startChapter(ST.li+1,0); else setState('ending',{stats:ST.stats}); } }
 // ---- финал
-function screenEnding(dt){ if(!ST.init){ ST.init=true; AUD.playMusic('m_ending',1.5,false); VOICE.clear(); VOICE.say(LEVELS[LEVELS.length-1].id===4?['e4']:['e1','e2']); ST.phase=0; }
+function screenEnding(dt){ if(!ST.init){ ST.init=true; AUD.playMusic('m_ending',1.5,false); VOICE.clear(); { const lid=LEVELS[LEVELS.length-1].id; VOICE.say(lid===5?['e5']:lid===4?['e4']:['e1','e2']); } ST.phase=0; }
   ST.t+=dt; const u=clamp(ST.t/40,0,1);
   ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,VH); ctx.globalAlpha=clamp(ST.t/2,0,1); drawCover(IMG.ending,0,0,VW,VH,lerp(1.02,1.14,u),lerp(0.6,0.5,u),0.5); ctx.globalAlpha=1;
   const vg=ctx.createLinearGradient(0,0,0,VH); vg.addColorStop(0,'rgba(0,0,0,.25)'); vg.addColorStop(1,'rgba(0,0,0,.6)'); ctx.fillStyle=vg; ctx.fillRect(0,0,VW,VH);
@@ -201,8 +201,8 @@ function frame(now){ const raw=(now-last)/1000; const dt=Math.min(0.1,raw); FDT=
   U.setTransform(UIK,0,0,UIK,0,0); U.clearRect(0,0,VW,VH);
   fxReset(); FX.time=now/1000;
   try{ switch(STATE){ case 'splash':screenSplash();break; case 'menu':screenMenu();break; case 'chapters':screenChapters();break; case 'settings':screenSettings();break; case 'controls':screenControls();break; case 'about':screenAbout();break; case 'bye':screenBye();break;
-    case 'intro':screenIntro(dt);break; case 'card':screenCard(dt);break; case 'game':screenGame(dt);break; case 'pause':screenPause();break; case 'chapterEnd':screenChapterEnd(dt);break; case 'ending':screenEnding(dt);break; }
-    if(!['intro','ending','game','card','chapterEnd'].includes(STATE))VOICE.update(dt);
+    case 'intro':screenIntro(dt);break; case 'card':screenCard(dt);break; case 'game':screenGame(dt);break; case 'pause':screenPause();break; case 'chapterEnd':screenChapterEnd(dt);break; case 'ending':screenEnding(dt);break; case 'cine5':screenCine5(dt);break; }
+    if(!['intro','ending','game','card','chapterEnd','cine5'].includes(STATE))VOICE.update(dt);
     if(SETTINGS.fx==='low'||SETTINGS.fx==='min'){ FX.rays=0; FX.dist=0; FX.heat=0; }
     if(PERF.msg){ PERF.msg.t+=dt; const a=clamp(Math.min(PERF.msg.t/0.3,(4-PERF.msg.t)/0.5),0,1); if(PERF.msg.t>4)PERF.msg=null; else { U.save(); U.globalAlpha=a; setFont(U,600,14,FONT_U); const w=U.measureText(PERF.msg.text).width+40; panel(U,VW-28-w,VH-90,w,34,{c:8,rivets:false}); U.fillStyle=UI.ink; U.fillText(PERF.msg.text,VW-28-w+20,VH-68); U.restore(); } }
     if(SETTINGS.showFps&&STATE!=='game')drawFps();
@@ -214,3 +214,34 @@ function frame(now){ const raw=(now-last)/1000; const dt=Math.min(0.1,raw); FDT=
   if(POST.ok&&POST.preload){ const l=[]; for(const L of LEVELS){ const A=prepLevelArt(L); l.push(IMG[L.sky],A.far,A.mid); } POST.preload(l.filter(Boolean)); }
   document.getElementById('loading').remove(); setState('splash'); requestAnimationFrame(frame); })();
 window.__dbg={get W(){return W},startGame,startChapter,setState,get state(){return STATE},get FPS(){return FPS},AUD};
+// ---- заставка главы V «Сангра»: Ken Burns, параллакс тумана, частицы, прожекторы, леттербокс, титры
+const CINE5=[{img:'cine1',v:'c5_1',z:[1.04,1.16],p:[[0.5,0.5],[0.4,0.48]],fx:'dust'},{img:'cine2',v:'c5_2',z:[1.2,1.04],p:[[0.55,0.42],[0.5,0.5]],fx:'sun'},
+  {img:'cine3',v:'c5_3',z:[1.06,1.16],p:[[0.35,0.5],[0.62,0.5]],fx:'drones'},{img:'cine4',v:'c5_4',z:[1.08,1.26],p:[[0.3,0.5],[0.42,0.45]],fx:'mark'},
+  {img:'cine5',v:'c5_5',z:[1.16,1.04],p:[[0.5,0.62],[0.5,0.45]],fx:'veil'},{img:'cine6',v:'c5_6',z:[1.04,1.18],p:[[0.7,0.5],[0.6,0.48]],fx:'sparks'}];
+function cineShot(k,lt,a){ const s=CINE5[k]; if(!s||a<=0)return; const d=ST.durs[k]+1; const u=clamp(lt/d,0,1), e=u*u*(3-2*u), t=ST.t;
+  ctx.globalAlpha=a; drawCover(IMG[s.img],0,0,VW,VH,lerp(s.z[0],s.z[1],e),lerp(s.p[0][0],s.p[1][0],e),lerp(s.p[0][1],s.p[1][1],e));
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  if(s.fx==='sun'){ glow(GLOW.hot,VW*0.78,VH*0.52,260+40*Math.sin(t),0.35*a); glow(GLOW.warm,VW*0.78,VH*0.52,700,0.12*a); }
+  if(s.fx==='drones'){ for(let i=0;i<3;i++){ const x=((lt*(40+i*18)+i*420)%(VW+300))-150, y=120+i*70+Math.sin(t*1.5+i)*10; const ang=Math.PI/2+Math.sin(t*0.7+i*2)*0.35;
+      ctx.globalAlpha=0.16*a; ctx.fillStyle='#ffe6b0'; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+Math.cos(ang-0.18)*700,y+Math.sin(ang-0.18)*700); ctx.lineTo(x+Math.cos(ang+0.18)*700,y+Math.sin(ang+0.18)*700); ctx.fill(); ctx.globalAlpha=a; glow(GLOW.warm,x,y,40,0.8); } }
+  if(s.fx==='mark'&&lt>0.8){ const k2=clamp((lt-0.8)/1.2,0,1)*(0.75+0.25*Math.sin(t*3)); const z=lerp(s.z[0],s.z[1],e); const mx=VW*0.62, my=VH*0.5; ctx.globalAlpha=a*k2; glow(GLOW.teal,mx,my,140*z,0.6);
+    ctx.globalCompositeOperation='source-over'; ctx.strokeStyle=`rgba(140,255,235,${0.95*a*k2})`; ctx.lineWidth=5*z; ctx.beginPath(); ctx.moveTo(mx-30*z,my); ctx.lineTo(mx,my-42*z); ctx.lineTo(mx+30*z,my); ctx.lineTo(mx,my+42*z); ctx.closePath(); ctx.stroke(); ctx.fillStyle=ctx.strokeStyle; ctx.fillRect(mx-3*z,my-20*z,6*z,40*z); }
+  if(s.fx==='veil'){ ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=a*(0.06+0.04*Math.sin(t*37)); ctx.fillStyle='#8fe8dc'; for(let y=0;y<VH;y+=4)ctx.fillRect(0,y,VW,1); ctx.globalAlpha=a*0.18*(Math.random()<0.08?1:0); ctx.fillRect(0,0,VW,VH); }
+  ctx.restore(); ctx.globalAlpha=1;
+  // параллакс: два слоя тумана с разной скоростью
+  ctx.save(); for(let i=0;i<2;i++){ ctx.globalAlpha=a*(0.18+i*0.1); const sp=(18+i*34)*(s.fx==='veil'?-1:1); const x0=-(((lt*sp)%1024)+1024)%1024; for(let x=x0-1024;x<VW;x+=1024)ctx.drawImage(CLOUD,x,VH*(0.55+i*0.15),1024,160+i*60); } ctx.restore(); ctx.globalAlpha=1; }
+function screenCine5(dt){ if(!ST.init){ ST.init=true; ST.i=-1; ST.next=0.7; ST.skip=0; ST.st=0; AUD.playMusic('m_intro',1.2,false); VOICE.clear(); ST.durs=CINE5.map(s=>Math.max(4.4,(AUD.buf['v_'+s.v]?AUD.buf['v_'+s.v].duration:4)+0.9));
+    ST.parts=Array.from({length:70},()=>({x:rnd(0,VW),y:rnd(0,VH),v:rnd(10,45),s:rnd(1,2.6),p:rnd(0,6)})); }
+  ST.t+=dt; VOICE.update(dt); const N=CINE5.length;
+  if(ST.i<N&&ST.t>=ST.next){ ST.i++; ST.st=ST.t; if(ST.i<N){ VOICE.say([CINE5[ST.i].v]); ST.next=ST.t+ST.durs[ST.i]; } else ST.next=ST.t+4.2; }
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,VH); const lt=ST.t-ST.st; FX.fade=0;
+  if(ST.i>=0&&ST.i<N){ cineShot(ST.i,lt,1); if(ST.i>0&&lt<1)cineShot(ST.i-1,lt+ST.durs[ST.i-1],1-lt); if(ST.i===0)FX.fade=clamp(1-lt/1.2,0,1); }
+  else if(ST.i>=N){ cineShot(N-1,lt+ST.durs[N-1],clamp(1-lt/2.2,0,1)); }
+  // частицы: пыль / искры / пепел
+  const sh=CINE5[clamp(ST.i,0,N-1)]; ctx.save(); ctx.globalCompositeOperation='lighter'; for(const e of ST.parts){ e.y-=e.v*dt*(sh.fx==='sparks'?2.2:1); e.x+=(sh.fx==='dust'?-24:8)*dt; if(e.y<-10){e.y=VH+10;e.x=rnd(0,VW);} if(e.x<-10)e.x=VW+10;
+    ctx.globalAlpha=0.3+0.3*Math.sin(ST.t*4+e.p); ctx.fillStyle=sh.fx==='sparks'?'#ffb35a':sh.fx==='veil'||sh.fx==='drones'?'#bff7ee':'#ffd9a8'; ctx.fillRect(e.x,e.y,e.s,e.s);} ctx.restore(); ctx.globalAlpha=1;
+  if(ST.i>=N){ const u=lt; const a=clamp(u/1.2,0,1)*clamp((4.2-u)/0.8,0,1); const g=U; g.save(); g.textAlign='center'; g.globalAlpha=a; setFont(g,700,14,FONT_U); g.letterSpacing='6px'; g.fillStyle=UI.accent; g.fillText('ГЛАВА V',VW/2,VH/2-70); g.letterSpacing='5px';
+    setFont(g,700,84,FONT_T); g.fillStyle='#eafff9'; g.shadowColor='rgba(120,230,210,.55)'; g.shadowBlur=30; g.fillText('САНГРА',VW/2,VH/2+10); g.shadowBlur=0; g.letterSpacing='0px'; ornament(g,VW/2,VH/2+36,460); g.restore(); }
+  Object.assign(FX,{bloom:0.55,thr:0.66,vign:0.6,grain:0.06,sat:1.05,ca:0.0018,rays:0}); if(ST.i>=N)FX.fade=clamp((lt-3.4)/0.8,0,1);
+  letterbox(); drawSubtitle(1,VH-108,true);
+  if(skipper(dt)||(ST.i>=N&&ST.t>=ST.next)){ VOICE.clear(); setState('card',{li:ST.li,cp:0}); } }

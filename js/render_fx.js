@@ -6,9 +6,11 @@ const FROST=(()=>{ const c=mkCanvas(640,360), g=c.getContext('2d'); const R=seed
     let a=R()*7, l=8+R()*30; g.lineWidth=0.5+R(); g.beginPath(); g.moveTo(x,y); for(let k=0;k<4;k++){ x+=Math.cos(a)*l; y+=Math.sin(a)*l; g.lineTo(x,y); a+=R()-0.5; l*=0.7; } g.stroke(); }
   const gr=g.createRadialGradient(320,180,120,320,180,380); gr.addColorStop(0,'rgba(200,230,255,0)'); gr.addColorStop(1,'rgba(200,230,255,.55)'); g.fillStyle=gr; g.fillRect(0,0,640,360); return c; })();
 function updateCamera(dt){ const P=W.P, c=W.cam, L=LV; const look=P.rope?P.vx*0.35:P.zip?220*P.face:P.face*110+P.vx*0.3;
-  c.lx=lerp(c.lx||look,look,1-Math.exp(-dt*2.2)); const tx=P.x+c.lx; let ty=P.y-95+(P.vy>400?P.vy*0.12:0);
+  c.lx=lerp(c.lx||look,look,1-Math.exp(-dt*2.2)); let tx=P.x+c.lx; let ty=P.y-95+(P.vy>400?P.vy*0.12:0);
+  const V=L.views&&!W.wall.active&&!P.dead?L.views.find(v=>P.x>v.x1&&P.x<v.x2):null; // фокус на головоломке: вся конструкция в кадре
+  if(V){ const hw=VW/2/V.z-90; tx=clamp(V.cx,P.x-hw,P.x+hw); ty=clamp(V.cy,P.y-VH/2/V.z+90,P.y+VH/2/V.z-120); }
   c.x=lerp(c.x,tx,1-Math.exp(-dt*(P.dashT>0?9:5))); c.y=lerp(c.y,ty,1-Math.exp(-dt*(Math.abs(c.y-ty)>120?6:3)));
-  let tz=1.62; if(P.rope||P.zip)tz=1.38; if(W.wall.active)tz=1.2; if(W.finished)tz=1.65; c.z=lerp(c.z,tz,1-Math.exp(-dt*1.6));
+  let tz=1.62; if(P.rope||P.zip)tz=1.38; if(W.wall.active)tz=1.2; if(W.finished)tz=1.65; else if(V)tz=V.z; c.z=lerp(c.z,tz,1-Math.exp(-dt*1.6));
   const halfH=VH/2/c.z; c.y=Math.min(c.y,(L.killY+(L.train?140:60))-halfH); c.x=clamp(c.x,VW/2/c.z-40,L.length-VW/2/c.z+40); }
 const PCOL={dust:null,steam:'#f4f0ea',smoke:'#1a1210',snowp:'#eaf6ff',frost:'#d8f0ff',debris:'#2a1a12',breath:'#dfeefa'};
 function drawParticles(addPass){ for(const p of W.parts){ const u=p.t/p.max; const a=1-u;
@@ -51,7 +53,7 @@ function distPass(L,cam){ distBegin(); const z=cam.z; const sx=x=>(x-cam.x)*z+VW
   if(L.heat){ for(const s of L.sunz)distHeatRect(sx(s[0]),0,(s[1]-s[0])*z,VH,0.8); }
   if(P.dashT>0)distLens(sx(P.x),sy(P.y-30),60*z,0.7);
   for(const s of W.shock){ const u=s.t/0.6; distRing(sx(s.x),sy(s.y),s.r*z*(0.3+u*1.2),(1-u)*0.9); } }
-const GRADE={1:{lift:[0.02,0.0,-0.02],gamma:[0.9,0.88,0.86],gain:[1.04,0.96,0.86],sat:1.12,exp:0.92,bloom:0.34,thr:0.85,rays:0.25,sunCol:[1,0.82,0.55],sh:[0.02,0,-0.02],hi:[0.03,0.01,-0.03]},
+const GRADE={5:{lift:[0.01,0.0,0.03],gamma:[0.98,0.96,0.94],gain:[1.04,0.98,1.0],sat:1.08,exp:0.98,bloom:0.5,thr:0.72,rays:0.2,sunCol:[1,0.55,0.4],sh:[0.0,0.01,0.04],hi:[0.04,0.01,-0.02]},1:{lift:[0.02,0.0,-0.02],gamma:[0.9,0.88,0.86],gain:[1.04,0.96,0.86],sat:1.12,exp:0.92,bloom:0.34,thr:0.85,rays:0.25,sunCol:[1,0.82,0.55],sh:[0.02,0,-0.02],hi:[0.03,0.01,-0.03]},
   2:{lift:[0.02,0.0,0.04],gamma:[1,0.98,1.04],gain:[1.04,0.96,1.04],sat:1.05,bloom:0.55,thr:0.72,rays:0.25,sunCol:[1,0.6,0.5],sh:[0.0,-0.01,0.04],hi:[0.03,0.0,0.0]},
   4:{lift:[0.03,0.015,-0.01],gamma:[0.92,0.92,0.94],gain:[0.98,0.93,0.86],sat:1.06,exp:0.84,bloom:0.24,thr:0.9,rays:0.12,sunCol:[1,0.92,0.75],sh:[0.03,0.0,0.02],hi:[0.02,0.01,-0.02]},
   3:{lift:[-0.01,0.01,0.04],gamma:[0.98,1,1.05],gain:[1.02,1.06,1.14],sat:1.0,bloom:0.6,thr:0.68,rays:0,sunCol:[0.7,0.9,1],sh:[-0.01,0.01,0.05],hi:[0.02,0.01,0.0]}};
@@ -70,17 +72,18 @@ function renderGame(dt=0){ const L=LV, cam=W.cam, P=W.P; const t=W.time;
   drawRails(L);
   for(const d of L.decor) if(d.k==='canopy'&&inVis(d.x,d.w))drawCanopy(d);
   for(const s of L.shelters) if(inVis(s.x,s.w))drawShelter(s,L);
-  const L4=L.id===4; if(L4)drawDecor4(L);
+  const L4=L.id===4, L5=L.id===5; if(L4)drawDecor4(L); else if(L5)drawDecor5(L);
   for(const wh of L.wheels) drawGear(wh,L);
   if(L.water)for(const w of L.water) if(inVis(w.x1,w.x2-w.x1))drawWater(w);
   for(const z of L.zips)drawZip(z);
   for(const s of LV.colStatic) if(inVis(s.x,s.w)&&s.y<VIS.y1)drawSolid(s,L);
   for(const s of L.solids) if(s.hollow&&inVis(s.x,s.w)){ ctx.fillStyle='#120804'; ctx.fillRect(s.x,s.y,s.w,400); ctx.save(); ctx.globalCompositeOperation='lighter'; glow(GLOW.hot,s.x+s.w/2,s.y+160,s.w,0.5+0.2*Math.sin(t*5)); ctx.restore(); }
-  if(L4){ drawShades4(L); drawMechBack4(L); }
+  if(L4){ drawShades4(L); drawMechBack4(L); } else if(L5){ drawShafts5(L); drawMechBack4(L); drawHints5(L); }
   for(const c of L.crumbles) if(inVis(c.x,c.w))drawCrumble(c,L);
   for(const m of L.movers)drawMover(m,L); for(const f of L.floes) if(inVis(f.x,f.w))drawFloe(f,L); for(const p of L.wheelPl)drawGearPl(p,L);
   const tgt=(!P.rope&&!W.hook)?findAnchor(P):null; for(const a of L.anchors) if(inVis(a.x-20,40))drawAnchor(a,L,a===tgt);
   if(L.crates.length||L.pulls.length){ const tg=(!P.rope&&!W.hook&&!P.tow)?findGrab(P):null; drawMechFront4(L,tg); } else if(L4)drawWorm4();
+  if(L5)for(const g of L.gates) if(g.all&&inVis(g.x-40,g.w+80))drawFuseLamps(g);
   for(const v of L.vents) if(inVis(v.x-40,80))drawVent(v,L);
   for(const b of L.braziers) if(inVis(b.x-40,80))drawBrazier(b,L);
   L.cps.forEach((c,i)=>{ if(inVis(c.x-60,60))drawCheckpoint(c,i,L); });
@@ -151,7 +154,7 @@ function drawHUD(dt){ const g=U, P=W.P, L=LV; g.save(); g.textBaseline='alphabet
   hud4(g,P,L);
   g.restore(); drawSubtitle(1,VH-70,true);
   if(SETTINGS.showFps)drawFps(); }
-function hud4(g,P,L){ if(L.id!==4)return;
+function hud4(g,P,L){ if(L.id<4)return;
   // вибрация песка
   if(L.sand.length&&P.x>L.sand[0][0]-200&&P.x<L.sand[L.sand.length-1][1]+150){ const v=W.wormVib||0; const w=232,h=10,x=VW-28-18-w,y=176; const warn=W.worm.st==='warn';
     g.save(); panel(g,x-18,y-26,w+36,48,{c:8,rivets:false,alpha:0.85,col:warn?'#ff7a4a':undefined}); hudLabel(g,warn?'ЧЕРВЬ! НА КАМНИ!':'ВИБРАЦИЯ ПЕСКА',x,y-8,warn?'#ffb08a':'rgba(244,237,227,.8)');

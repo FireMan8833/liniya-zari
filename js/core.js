@@ -37,7 +37,7 @@ function getSave(){try{return JSON.parse(localStorage.getItem('lz_save')||'null'
 function setSave(o){localStorage.setItem('lz_save',JSON.stringify(o))}
 
 // ----- изображения
-const IMG={}; const IMG_LIST=['cover','city','planet','crash','fault','bg_hot','bg_cold','ending','hero','sky1','sky2','sky3','tex1','tex2','tex3','tex4','p_irma','p_avram','p_sola','sola_full','recv','sky5','tex5','p_mara','p_veil','mara_full','cine1','cine2','cine3','cine4','cine5','cine6'];
+const IMG={}; const IMG_LIST=['cover','city','planet','crash','fault','bg_hot','bg_cold','ending','hero','sky1','sky2','sky3','tex1','tex2','tex3','tex4','p_irma','p_avram','p_sola','sola_full','recv','sky5','tex5','p_mara','p_veil','mara_full'];
 function loadImages(){return Promise.all(IMG_LIST.map(n=>new Promise(r=>{const i=new Image();i.onload=()=>{IMG[n]=i;r()};i.onerror=()=>r();i.src=(window.ASSETS_IMG&&ASSETS_IMG[n])||('img/'+n+'.jpg');}))).then(()=>{ if(IMG.bg_hot&&!IMG.sky4)IMG.sky4=IMG.bg_hot; });}
 function drawCover(img,x,y,w,h,zoom=1,px=0.5,py=0.5,c=ctx){ if(!img)return; const s=Math.max(w/img.width,h/img.height)*zoom;
   const dw=img.width*s,dh=img.height*s; c.drawImage(img,x+(w-dw)*px,y+(h-dh)*py,dw,dh);}
@@ -91,7 +91,7 @@ const AUD={ctx:null,buf:{},master:null,mus:null,vox:null,sfx:null,amb:{},music:n
     const comp=c.createDynamicsCompressor(); comp.threshold.value=-10; comp.ratio.value=4; comp.connect(this.master);
     this.mus=c.createGain(); this.vox=c.createGain(); this.sfx=c.createGain(); this.mus.connect(comp); this.sfx.connect(comp); const vc=c.createDynamicsCompressor(); vc.threshold.value=-18; vc.ratio.value=3; vc.attack.value=0.004; vc.release.value=0.15; this.vox.connect(vc); vc.connect(this.master);
     this.applyVolumes();
-    const jobs=Object.entries(window.ASSETS_AUDIO||{}).map(async([k,b64])=>{ try{const bin=atob(b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    const jobs=Object.entries(window.ASSETS_AUDIO||{}).filter(([k])=>!k.startsWith('m_')).map(async([k,b64])=>{ try{const bin=atob(b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
       this.buf[k]=await c.decodeAudioData(u.buffer);}catch(e){console.warn('audio',k,e)} });
     await Promise.all(jobs); },
   applyVolumes(){ if(!this.ctx)return; const v=x=>Math.pow(x/10,1.6); this.mus.gain.value=v(SETTINGS.music)*0.55*this.duck; this.vox.gain.value=v(SETTINGS.voice)*1.6; this.sfx.gain.value=v(SETTINGS.sfx)*0.8*(this.sduck||1); },
@@ -100,7 +100,14 @@ const AUD={ctx:null,buf:{},master:null,mus:null,vox:null,sfx:null,amb:{},music:n
     const g=c.createGain(); g.gain.value=vol; let node=g; if(pan&&c.createStereoPanner){const p=c.createStereoPanner();p.pan.value=clamp(pan,-1,1);g.connect(p);node=p;} node.connect(this[bus]); s.connect(g); s.start(); return s; },
   playMusic(name,fade=2,loop=true){ if(!this.ctx||this.musicName===name)return; const c=this.ctx, now=c.currentTime;
     if(this.music){const m=this.music; m.g.gain.cancelScheduledValues(now); m.g.gain.setValueAtTime(m.g.gain.value,now); m.g.gain.linearRampToValueAtTime(0,now+fade); m.s.stop(now+fade+0.1);}
-    this.musicName=name; const b=this.buf[name]; if(!b){this.music=null;return;}
+    this.musicName=name; const b=this.buf[name]; if(!b){ this.music=null; this.loadMusic(name).then(bb=>{ if(bb&&this.musicName===name&&!this.music)this.startMusic(name,bb,fade,loop); }); return; }
+    this.startMusic(name,b,fade,loop); },
+  // музыка декодируется по требованию и выгружается (экономия ~300 МБ памяти)
+  loadMusic(name){ const b64=(window.ASSETS_AUDIO||{})[name]; if(!b64||!this.ctx)return Promise.resolve(null); if(this.buf[name])return Promise.resolve(this.buf[name]);
+    if(this._mp&&this._mp[name])return this._mp[name]; this._mp=this._mp||{};
+    return this._mp[name]=(async()=>{ try{ const bin=atob(b64); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i); const bb=await this.ctx.decodeAudioData(u.buffer);
+      for(const k in this.buf) if(k.startsWith('m_')&&k!==name&&k!==this.musicName&&k!=='m_menu')delete this.buf[k]; this.buf[name]=bb; return bb; }catch(e){ console.warn('music',name,e); return null; } finally{ delete this._mp[name]; } })(); },
+  startMusic(name,b,fade,loop){ const c=this.ctx, now=c.currentTime;
     const s=c.createBufferSource(); s.buffer=b; s.loop=loop; const g=c.createGain(); g.gain.value=0; g.gain.linearRampToValueAtTime(1,now+fade); s.connect(g); g.connect(this.mus); s.start(); this.music={s,g}; },
   stopMusic(fade=1.5){ if(!this.music||!this.ctx)return; const now=this.ctx.currentTime,m=this.music; m.g.gain.setValueAtTime(m.g.gain.value,now); m.g.gain.linearRampToValueAtTime(0,now+fade); m.s.stop(now+fade+.1); this.music=null; this.musicName=''; },
   ambient(name,target){ if(!this.ctx||!this.buf[name])return; let a=this.amb[name]; const c=this.ctx;

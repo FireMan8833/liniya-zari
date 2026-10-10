@@ -26,7 +26,7 @@ function respawn(ci){ const P=W.P; const cp=LV.cps[clamp(ci,0,LV.cps.length-1)];
   Object.assign(P,{x,y,vx:0,vy:0,face:1,onGround:true,dead:0,rope:null,zip:null,heat:0,cold:0,dashT:0,lock:0,action:null,inv:0.5,wall:0,tow:null,cloak:null}); P.charge=Math.max(P.charge,0.5);
   P.anim=newAnim(); W.hook=null; W.expo=0; W.goalP=0;
   for(const c of LV.crumbles){c.st=0;c.t=0;} for(const f of LV.floes){f.sink=0;f.on=0;} for(const ic of LV.icicles){ic.st=0;ic.t=0;ic.y=ic.y0;ic.vy=0;}
-  for(const c of LV.crates){ if(c.x0>=x-250||c.y>LV.killY){ c.x=c.x0; c.y=c.y0; c.pvx=c.pvy=c.vx=c.vy=0; } } for(const r of LV.receivers) if(!r.done)r.ch=0;
+  for(const c of LV.crates){ if(c.x0>=x-250||c.y>LV.killY){ c.x=c.x0; c.y=c.y0; c.pvx=c.pvy=c.vx=c.vy=0; c.snap=null; } } for(const r of LV.receivers) if(!r.done)r.ch=0;
   W.worm={st:'idle',tr:0,t:0,x:0,sy:0}; W.beam=null; if(W.choice&&!W.choice.done)W.choice=null;
   W.wall={active:false,x:0,done:W.wall&&W.wall.done&&LV.chase&&x>LV.chase.to};
   if(LV.chase&&x<LV.chase.trig){ W.firedTrig[LV.trig.findIndex(t=>t.x===LV.chase.trig)]=false; }
@@ -75,7 +75,7 @@ function findAnchor(P){ const [gx,gy]=gripPt(P); let best=null,bs=1e9;
 function grabPt(o,P){ if(o.crate){ const left=P?P.x<o.x+o.w/2:true; return [left?o.x+5:o.x+o.w-5,o.y+o.h*0.36]; } return [o.x,o.y]; }
 function findGrab(P){ if(!LV.crates.length&&!LV.pulls.length)return null; const [gx,gy]=gripPt(P); let best=null,bs=1e9;
   const test=o=>{ const [x,y]=grabPt(o,P); const dx=x-gx, dy=y-gy, d=Math.hypot(dx,dy); if(d>PHY.ROPE||d<34)return; if(dx*P.face<-24)return; if(occluded(gx,gy,x,y))return; const s=d-(dx*P.face>0?80:0); if(s<bs){bs=s;best=o;} };
-  for(const c of LV.crates) if(P.ground!==c)test(c); for(const p of LV.pulls) if(!p.done)test(p); return best; }
+  for(const c of LV.crates) if(P.ground!==c&&!c.snap)test(c); for(const p of LV.pulls) if(!p.done)test(p); return best; }
 function fireGrab(P,o){ const [gx,gy]=gripPt(P); W.hook={x:gx,y:gy,a:{x:0,y:0},grab:o,miss:false,t:0}; sfx('s_grapple_fire',{vol:.7,rate:1.08}); W.ropeV.init=false; }
 function fireLink(id){ if(!id)return; if(W.flags)W.flags[id]=true; for(const g of LV.gates) if(g.id===id&&!g.latch){ g.latch=true; sfx('s_gate',{vol:.8}); shake(2); }
   for(const m of LV.mirrors) if(m.id===id&&m.alt&&m.t!==m.alt){ m.t=m.alt; m.flip=0.5; sfx('s_gate',{vol:.6,rate:1.3}); } }
@@ -248,7 +248,7 @@ function liftRider(g,top){ const P=W.P; return !P.dead&&P.onGround&&Math.abs(P.y
 function linkOn(id){ return !!(W.flags&&W.flags[id])||LV.plates.some(pl=>pl.link===id&&pl.on); }
 function updateMech(dt,I){ const L=LV; if(!L.crates.length&&!L.gates.length)return; const P=W.P;
   // плиты: нажаты, пока на них стоит ящик
-  for(const pl of L.plates){ const was=pl.on; pl.on=L.crates.some(c=>Math.abs(c.y+c.h-pl.y)<4&&Math.min(c.x+c.w,pl.x+pl.w)-Math.max(c.x,pl.x)>=30); if(pl.on!==was)sfx('s_plate',{vol:.7,rate:pl.on?1:0.8}); }
+  for(const pl of L.plates){ const was=pl.on; const cr=L.crates.find(c=>Math.abs(c.y+c.h-pl.y)<4&&Math.min(c.x+c.w,pl.x+pl.w)-Math.max(c.x,pl.x)>=30); pl.on=!!cr; if(cr&&!cr.snap){ cr.snap=pl; if(P.tow&&P.tow.c===cr)P.tow=null; } if(pl.on!==was)sfx('s_plate',{vol:.7,rate:pl.on?1:0.8}); }
   // створки
   for(const g of L.gates){ let tgt=(g.all?g.all.every(linkOn):(g.latch||linkOn(g.id)))?1:0; const o=g.open;
     if(g.cargo){ const top=g.y-g.h*o, gc=gateCol(g); g.load=L.crates.some(c=>Math.abs(c.y+c.h-top)<5&&Math.min(c.x+c.w,g.x+g.w)-Math.max(c.x,g.x)>=40); g.rider=liftRider(g,top);
@@ -261,9 +261,9 @@ function updateMech(dt,I){ const L=LV; if(!L.crates.length&&!L.gates.length)retu
   for(const s of L.solids) if(s.oneWay&&!base.includes(s))base.push(s);
   const hw=PHY.PW/2;
   for(const c of L.crates){ const ox=c.x, oy=c.y;
-    if(!P.dead&&P.onGround&&P.ground!==c&&I.ax&&!P.tow&&!P.cloak&&c.onG){ const dir=Math.sign(I.ax); const edge=dir>0?c.x:c.x+c.w; const pe=P.x+dir*hw; if(Math.abs(pe-edge)<3.5&&P.y>c.y+6&&P.y-PHY.PH<c.y+c.h){ c.pvx=dir*PUSHV; P.pushing=c; c.pushT=0.12; } }
+    if(c.snap){ const tx=c.snap.x+c.snap.w/2-c.w/2; c.pvx=clamp((tx-c.x)*10,-140,140); c.towed=false; c.pushT=0; } else if(!P.dead&&P.onGround&&P.ground!==c&&I.ax&&!P.tow&&!P.cloak&&c.onG){ const dir=Math.sign(I.ax); const edge=dir>0?c.x:c.x+c.w; const pe=P.x+dir*hw; if(Math.abs(pe-edge)<3.5&&P.y>c.y+6&&P.y-PHY.PH<c.y+c.h){ c.pvx=dir*PUSHV; P.pushing=c; c.pushT=0.12; } }
     c.pushT=Math.max(0,(c.pushT||0)-dt);
-    if(c.onG&&!c.towed&&c.pushT<=0)c.pvx*=Math.exp(-dt*10); c.towed=false;
+    if(c.onG&&!c.towed&&c.pushT<=0&&!c.snap)c.pvx*=Math.exp(-dt*10); c.towed=false;
     c.pvy=Math.min(c.pvy+PHY.G*dt,PHY.FALL);
     const others=base.concat(L.crates.filter(o=>o!==c));
     if(!P.dead&&P.ground!==c)others.push({x:P.x-hw,y:P.y-PHY.PH,w:PHY.PW,h:PHY.PH,pl:1});

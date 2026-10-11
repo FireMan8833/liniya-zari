@@ -2,7 +2,7 @@
 // ===== экраны: заставка, меню, главы, ролик, пауза, итоги, финал; главный цикл =====
 let STATE='loading', ST={t:0};
 const IS_ELECTRON=/Electron/i.test(navigator.userAgent);
-const VERSION='v0.6.1';
+const VERSION='v0.7.0';
 if(!SETTINGS.fx)SETTINGS.fx='high';
 function setState(s,o={}){ STATE=s; ST=Object.assign({t:0,sel:0},o); MOUSE.click=false; }
 function loadSave(){ return Object.assign({chapter:0,cp:0,unlocked:0,shards:[],done:false,deaths:0,time:0},getSave()||{}); }
@@ -43,7 +43,7 @@ function bgMenu(img='cover'){ const t=performance.now()/1000; const mx=(MOUSE.x/
   Object.assign(FX,{bloom:0.5,thr:0.7,vign:0.45,grain:0.05,sat:1.05}); }
 function drawTitle(x,y,size=84,a=1){ const g=U; g.save(); g.globalAlpha=a; g.textAlign='left'; setFont(g,700,size,FONT_T); g.letterSpacing=(size*0.05)+'px';
   g.shadowColor='rgba(255,140,60,.45)'; g.shadowBlur=24; g.fillStyle='#fff3e4'; g.fillText('ЛИНИЯ ЗАРИ',x,y); g.shadowBlur=0;
-  const w=g.measureText('ЛИНИЯ ЗАРИ').width; g.letterSpacing='5px'; setFont(g,700,13,FONT_U); g.fillStyle=UI.accent; g.fillText('ЧАСТЬ I  ·  ПЯТЬ ГЛАВ',x+4,y+34);
+  const w=g.measureText('ЛИНИЯ ЗАРИ').width; g.letterSpacing='5px'; setFont(g,700,13,FONT_U); g.fillStyle=UI.accent; g.fillText('ЧАСТЬ I  ·  ШЕСТЬ ГЛАВ',x+4,y+34);
   g.strokeStyle='rgba(201,138,75,.7)'; g.lineWidth=1.2; g.beginPath(); g.moveTo(x+240,y+29); g.lineTo(x+Math.max(300,w-20),y+29); g.stroke(); g.restore(); }
 function screenSplash(){ ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,VH); ST.t+=FDT; const a=clamp(ST.t/1.2,0,1); const g=U;
   g.save(); g.globalAlpha=a; g.textAlign='center'; setFont(g,700,64,FONT_T); g.letterSpacing='5px'; g.fillStyle='#fff1e0'; g.fillText('ЛИНИЯ ЗАРИ',VW/2,VH/2-14); g.letterSpacing='0px';
@@ -121,8 +121,8 @@ function screenIntro(dt){ if(!ST.init){ ST.init=true; ST.i=-1; ST.next=0.8; ST.s
   letterbox(); drawSubtitle(1,VH-108);
   if(skipper(dt)||(ST.i>=INTRO.length&&ST.t>=ST.next)){ VOICE.clear(); startChapter(0,0); } }
 // ---- карточка главы
-const CH_LINE={0:'Хвост города плавится. Нужно добраться до головы состава.',1:'Старый мост через каньон. Ветер с ночной стороны.',2:'Вечная ночь. Стрелка обходного пути вмёрзла в лёд.',4:'Мёртвый город-ковчег. Кто-то внутри всё ещё зажигает огонь.',3:'Пекло. Прямой путь колонистов через вечный полдень.'};
-function startChapter(li,cp=0,fromContinue=false){ if(LEVELS[li].id===5&&cp===0){ setState('cine5',{li}); AUD.stopAmbient(); return; } setState('card',{li,cp}); AUD.stopAmbient(); }
+const CH_LINE={0:'Хвост города плавится. Нужно добраться до головы состава.',1:'Старый мост через каньон. Ветер с ночной стороны.',2:'Вечная ночь. Стрелка обходного пути вмёрзла в лёд.',4:'Мёртвый город-ковчег. Кто-то внутри всё ещё зажигает огонь.',5:'Корпус «Зари». Навигаторы считают бег солнца — и врут.',3:'Пекло. Прямой путь колонистов через вечный полдень.'};
+function startChapter(li,cp=0,fromContinue=false){ if(STORY[LEVELS[li].id]&&cp===0){ setState('story',{li}); AUD.stopAmbient(); return; } setState('card',{li,cp}); AUD.stopAmbient(); }
 function screenCard(dt){ const L=LEVELS[ST.li]; if(!ST.init){ ST.init=true; AUD.play('s_checkpoint',{vol:.5,rate:.7}); VOICE.clear(); if(ST.li===0&&ST.cp===0)VOICE.say(['c1']); if(LEVELS[ST.li].id===4&&ST.cp===0)VOICE.say(['e2']); }
   ST.t+=dt; VOICE.update(dt); const u=clamp(ST.t/5,0,1); ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,VH); ctx.globalAlpha=clamp(ST.t/1.2,0,1); drawCover(IMG[L.sky],0,0,VW,VH,lerp(1.05,1.15,u),0.3+u*0.2,0.5); ctx.globalAlpha=1;
   const gr=ctx.createLinearGradient(0,0,0,VH); gr.addColorStop(0,'rgba(0,0,0,.25)'); gr.addColorStop(.5,'rgba(0,0,0,.45)'); gr.addColorStop(1,'rgba(0,0,0,.7)'); ctx.fillStyle=gr; ctx.fillRect(0,0,VW,VH);
@@ -167,7 +167,7 @@ function screenChapterEnd(dt){ const L=LEVELS[ST.li]; ST.t+=dt; VOICE.update(dt)
   Object.assign(FX,{bloom:0.5,thr:0.7,vign:0.5});
   if(ST.t>1.5&&(INPUT.hit('confirm')||MOUSE.click)){ MOUSE.click=false; if(ST.li<LEVELS.length-1)startChapter(ST.li+1,0); else setState('ending',{stats:ST.stats}); } }
 // ---- финал
-function screenEnding(dt){ if(!ST.init){ ST.init=true; AUD.playMusic('m_ending',1.5,false); VOICE.clear(); { const lid=LEVELS[LEVELS.length-1].id; VOICE.say(lid===5?['e5']:lid===4?['e4']:['e1','e2']); } ST.phase=0; }
+function screenEnding(dt){ if(!ST.init){ ST.init=true; AUD.playMusic('m_ending',1.5,false); VOICE.clear(); { const lid=LEVELS[LEVELS.length-1].id; VOICE.say(lid===6?['e6']:lid===5?['e5']:lid===4?['e4']:['e1','e2']); } ST.phase=0; }
   ST.t+=dt; const u=clamp(ST.t/40,0,1);
   ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,VH); ctx.globalAlpha=clamp(ST.t/2,0,1); drawCover(IMG.ending,0,0,VW,VH,lerp(1.02,1.14,u),lerp(0.6,0.5,u),0.5); ctx.globalAlpha=1;
   const vg=ctx.createLinearGradient(0,0,0,VH); vg.addColorStop(0,'rgba(0,0,0,.25)'); vg.addColorStop(1,'rgba(0,0,0,.6)'); ctx.fillStyle=vg; ctx.fillRect(0,0,VW,VH);
@@ -201,8 +201,8 @@ function frame(now){ const raw=(now-last)/1000; const dt=Math.min(0.1,raw); FDT=
   U.setTransform(UIK,0,0,UIK,0,0); U.clearRect(0,0,VW,VH);
   fxReset(); FX.time=now/1000;
   try{ switch(STATE){ case 'splash':screenSplash();break; case 'menu':screenMenu();break; case 'chapters':screenChapters();break; case 'settings':screenSettings();break; case 'controls':screenControls();break; case 'about':screenAbout();break; case 'bye':screenBye();break;
-    case 'intro':screenIntro(dt);break; case 'card':screenCard(dt);break; case 'game':screenGame(dt);break; case 'pause':screenPause();break; case 'chapterEnd':screenChapterEnd(dt);break; case 'ending':screenEnding(dt);break; case 'cine5':screenCine5(dt);break; }
-    if(!['intro','ending','game','card','chapterEnd','cine5'].includes(STATE))VOICE.update(dt);
+    case 'intro':screenIntro(dt);break; case 'card':screenCard(dt);break; case 'game':screenGame(dt);break; case 'pause':screenPause();break; case 'chapterEnd':screenChapterEnd(dt);break; case 'ending':screenEnding(dt);break; case 'story':screenStory(dt);break; }
+    if(!['intro','ending','game','card','chapterEnd','story'].includes(STATE))VOICE.update(dt);
     if(SETTINGS.fx==='low'||SETTINGS.fx==='min'){ FX.rays=0; FX.dist=0; FX.heat=0; }
     if(PERF.msg){ PERF.msg.t+=dt; const a=clamp(Math.min(PERF.msg.t/0.3,(4-PERF.msg.t)/0.5),0,1); if(PERF.msg.t>4)PERF.msg=null; else { U.save(); U.globalAlpha=a; setFont(U,600,14,FONT_U); const w=U.measureText(PERF.msg.text).width+40; panel(U,VW-28-w,VH-90,w,34,{c:8,rivets:false}); U.fillStyle=UI.ink; U.fillText(PERF.msg.text,VW-28-w+20,VH-68); U.restore(); } }
     if(SETTINGS.showFps&&STATE!=='game')drawFps();
@@ -214,29 +214,16 @@ function frame(now){ const raw=(now-last)/1000; const dt=Math.min(0.1,raw); FDT=
   if(POST.ok&&POST.preload){ const l=[]; for(const L of LEVELS){ const A=prepLevelArt(L); l.push(IMG[L.sky],A.far,A.mid); } POST.preload(l.filter(Boolean)); }
   document.getElementById('loading').remove(); setState('splash'); requestAnimationFrame(frame); })();
 window.__dbg={get W(){return W},startGame,startChapter,setState,get state(){return STATE},get FPS(){return FPS},AUD};
-// ---- заставка главы V «Сангра»: снята на движке игры — живые слои мира, Ирма, прожекторы, дрон, метка Тео, кузница Мары
-const CINE5=[
-  {v:'c5_1',li:3,px:11420,ax:1,sneak:1,cam:[11560,400,1.0, 11860,390,1.12]},
-  {v:'c5_2',li:4,px:160,ax:1,sneak:1,cam:[480,350,0.86, 700,400,1.0]},
-  {v:'c5_3',li:4,px:6500,ax:0,crouch:1,cam:[6820,330,0.84, 7060,350,0.94]},
-  {v:'c5_4',li:4,px:846,ax:0,face:1,cam:[880,470,2.0, 900,480,2.45]},
-  {v:'c5_5',li:4,px:8040,ax:0,crouch:1,alarm:1,cam:[8080,390,1.15, 8140,400,1.35]},
-  {v:'c5_6',li:4,px:10330,ax:1,sneak:1,cam:[10520,450,1.35, 10590,470,1.85],title:1}];
-function cineSetup(k){ const s=CINE5[k]; buildWorld(s.li); W.god=true; W.sola=SAVE.sola||null; respawn(0); const P=W.P; P.x=s.px; let y=900; for(const c of LV.colStatic){ if(P.x>=c.x&&P.x<=c.x+c.w&&c.y<y&&c.k!=='bound')y=c.y; } P.y=y; P.face=s.face||1; P.onGround=true;
-  for(let i=0;i<LV.trig.length;i++)W.firedTrig[i]=true; W.cp=LV.cps.length-1; W.time=3+k*7;
-  W.ctrl={ax:s.ax,c:{down:!!(s.sneak||s.crouch)},held(a){return !!this.c[a]},hit(){return false}}; ST.shot=k; ST.st=ST.t; }
-function screenCine5(dt){ if(!ST.init){ ST.init=true; ST.skip=0; VOICE.clear(); AUD.playMusic('m_city',1.5); ST.durs=CINE5.map(s=>Math.max(4.6,(AUD.buf['v_'+s.v]?AUD.buf['v_'+s.v].duration:4.5)+1.0)); cineSetup(0); VOICE.say([CINE5[0].v]); }
-  ST.t+=dt; VOICE.update(dt); const N=CINE5.length; let lt=ST.t-ST.st; const d=ST.durs[ST.shot]+(CINE5[ST.shot].title?3.5:0);
-  if(lt>=d){ if(ST.shot<N-1){ cineSetup(ST.shot+1); VOICE.say([CINE5[ST.shot].v]); lt=0; } else { VOICE.clear(); setState('card',{li:ST.li,cp:0}); return; } }
-  const s=CINE5[ST.shot]; const u=clamp(lt/d,0,1), e=u*u*(3-2*u);
-  let n=0; ACC+=dt; while(ACC>=1/120&&n<10){ stepWorld(1/120); ACC-=1/120; n++; } if(n>=10)ACC=0; updateFx(dt);
-  const c=W.cam, k=s.cam; c.x=lerp(k[0],k[3],e); c.y=lerp(k[1],k[4],e); c.z=lerp(k[2],k[5],e); W.trauma=0;
-  safeRun(()=>renderGame(dt),ctx); ctx.setTransform(RS,0,0,RS,0,0);
-  if(s.alarm){ const a=0.12+0.1*Math.max(0,Math.sin(ST.t*6)); ctx.fillStyle=`rgba(120,255,230,${a*0.35})`; for(let y=0;y<VH;y+=4)ctx.fillRect(0,y,VW,1); ctx.fillStyle=`rgba(255,60,40,${a*0.5})`; ctx.fillRect(0,0,VW,VH); }
-  // переход: затемнение на стыках кадров
-  const fin=clamp(lt/0.7,0,1), fout=clamp((d-lt)/0.6,0,1); FX.fade=1-Math.min(fin,ST.shot===N-1?1:fout);
-  if(ST.shot===N-1){ FX.fade=Math.max(FX.fade,clamp((lt-(d-0.9))/0.9,0,1)); }
-  if(s.title&&lt>ST.durs[ST.shot]-0.8){ const a=clamp((lt-ST.durs[ST.shot]+0.8)/1.2,0,1)*clamp((d-0.6-lt)/0.8,0,1); const g=U; g.save(); g.textAlign='center'; g.globalAlpha=a; setFont(g,700,14,FONT_U); g.letterSpacing='6px'; g.fillStyle=UI.accent; g.fillText('ГЛАВА V',VW/2,VH/2-70); g.letterSpacing='5px';
-    setFont(g,700,84,FONT_T); g.fillStyle='#eafff9'; g.shadowColor='rgba(120,230,210,.55)'; g.shadowBlur=30; g.fillText('САНГРА',VW/2,VH/2+10); g.shadowBlur=0; g.letterSpacing='0px'; ornament(g,VW/2,VH/2+36,460); g.restore(); }
-  FX.vign=0.62; letterbox(); drawSubtitle(1,VH-108,true);
+// ---- сюжетные заставки перед главами V и VI: иллюстрации + рассказчик
+const STORY={5:['st5_1','st5_2','st5_3','st5_4','st5_5','st5_6'],6:['st6_1','st6_2','st6_3','st6_4','st6_5']};
+const STORY_KB=[{z:[1.0,1.1],p:[[0.5,0.5],[0.45,0.52]]},{z:[1.12,1.0],p:[[0.55,0.45],[0.48,0.5]]},{z:[1.0,1.12],p:[[0.42,0.5],[0.56,0.46]]},{z:[1.1,1.02],p:[[0.5,0.42],[0.5,0.55]]}];
+function screenStory(dt){ const S=STORY[LEVELS[ST.li].id]; if(!ST.init){ ST.init=true; ST.i=-1; ST.next=0.6; ST.slideT=0; ST.skip=0; VOICE.clear(); AUD.playMusic(LEVELS[ST.li].music,1.5); ST.durs=S.map(v=>(AUD.buf['v_'+v]?AUD.buf['v_'+v].duration:5)+1.4); }
+  ST.t+=dt; ST.slideT+=dt; VOICE.update(dt);
+  if(ST.t>=ST.next&&(ST.i<0||!VOICE.busy()||ST.t>ST.next+8)){ ST.i++; ST.slideT=0; if(ST.i<S.length){ VOICE.say([S[ST.i]],{story:1}); const vb=AUD.buf['v_'+S[ST.i]]; if(vb)ST.durs[ST.i]=vb.duration+1.4; ST.next=ST.t+ST.durs[ST.i]; } else { VOICE.clear(); setState('card',{li:ST.li,cp:0}); return; } }
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,VH);
+  const draw=(k,a)=>{ if(k<0||k>=S.length)return; const kb=STORY_KB[k%4]; const u=clamp((k===ST.i?ST.slideT:ST.slideT+ST.durs[k])/(ST.durs[k]+1.2),0,1); ctx.globalAlpha=a;
+    drawCover(IMG[S[k]],0,0,VW,VH,lerp(kb.z[0],kb.z[1],u),lerp(kb.p[0][0],kb.p[1][0],u),lerp(kb.p[0][1],kb.p[1][1],u)); ctx.globalAlpha=1; };
+  const fi=clamp(ST.slideT/1.0,0,1); if(ST.i>0&&fi<1)draw(ST.i-1,1); draw(ST.i,fi);
+  Object.assign(FX,{bloom:0.5,thr:0.7,vign:0.55,grain:0.06,sat:1.0,ca:0.0015}); FX.fade=ST.t<0.8?1-ST.t/0.8:Math.max(0,(ST.t-(ST.next-0.6))/0.6)*(ST.i===S.length-1?1:0);
+  letterbox(); drawSubtitle(1,VH-108,true);
   if(skipper(dt)){ VOICE.clear(); setState('card',{li:ST.li,cp:0}); } }

@@ -53,7 +53,7 @@ function distPass(L,cam){ distBegin(); const z=cam.z; const sx=x=>(x-cam.x)*z+VW
   if(L.heat){ for(const s of L.sunz)distHeatRect(sx(s[0]),0,(s[1]-s[0])*z,VH,0.8); }
   if(P.dashT>0)distLens(sx(P.x),sy(P.y-30),60*z,0.7);
   for(const s of W.shock){ const u=s.t/0.6; distRing(sx(s.x),sy(s.y),s.r*z*(0.3+u*1.2),(1-u)*0.9); } }
-const GRADE={5:{lift:[0.01,0.0,0.03],gamma:[0.98,0.96,0.94],gain:[1.04,0.98,1.0],sat:1.08,exp:0.98,bloom:0.5,thr:0.72,rays:0.2,sunCol:[1,0.55,0.4],sh:[0.0,0.01,0.04],hi:[0.04,0.01,-0.02]},1:{lift:[0.02,0.0,-0.02],gamma:[0.9,0.88,0.86],gain:[1.04,0.96,0.86],sat:1.12,exp:0.92,bloom:0.34,thr:0.85,rays:0.25,sunCol:[1,0.82,0.55],sh:[0.02,0,-0.02],hi:[0.03,0.01,-0.03]},
+const GRADE={6:{lift:[0.0,0.01,0.04],gamma:[0.98,0.97,0.94],gain:[1.04,1.0,0.98],sat:1.06,exp:1.0,bloom:0.55,thr:0.7,rays:0.22,sunCol:[1,0.78,0.5],sh:[0.0,0.01,0.05],hi:[0.04,0.02,-0.01]},5:{lift:[0.01,0.0,0.03],gamma:[0.98,0.96,0.94],gain:[1.04,0.98,1.0],sat:1.08,exp:0.98,bloom:0.5,thr:0.72,rays:0.2,sunCol:[1,0.55,0.4],sh:[0.0,0.01,0.04],hi:[0.04,0.01,-0.02]},1:{lift:[0.02,0.0,-0.02],gamma:[0.9,0.88,0.86],gain:[1.04,0.96,0.86],sat:1.12,exp:0.92,bloom:0.34,thr:0.85,rays:0.25,sunCol:[1,0.82,0.55],sh:[0.02,0,-0.02],hi:[0.03,0.01,-0.03]},
   2:{lift:[0.02,0.0,0.04],gamma:[1,0.98,1.04],gain:[1.04,0.96,1.04],sat:1.05,bloom:0.55,thr:0.72,rays:0.25,sunCol:[1,0.6,0.5],sh:[0.0,-0.01,0.04],hi:[0.03,0.0,0.0]},
   4:{lift:[0.03,0.015,-0.01],gamma:[0.92,0.92,0.94],gain:[0.98,0.93,0.86],sat:1.06,exp:0.84,bloom:0.24,thr:0.9,rays:0.12,sunCol:[1,0.92,0.75],sh:[0.03,0.0,0.02],hi:[0.02,0.01,-0.02]},
   3:{lift:[-0.01,0.01,0.04],gamma:[0.98,1,1.05],gain:[1.02,1.06,1.14],sat:1.0,bloom:0.6,thr:0.68,rays:0,sunCol:[0.7,0.9,1],sh:[-0.01,0.01,0.05],hi:[0.02,0.01,0.0]}};
@@ -72,7 +72,7 @@ function renderGame(dt=0){ const L=LV, cam=W.cam, P=W.P; const t=W.time;
   drawRails(L);
   for(const d of L.decor) if(d.k==='canopy'&&inVis(d.x,d.w))drawCanopy(d);
   for(const s of L.shelters) if(inVis(s.x,s.w))drawShelter(s,L);
-  const L4=L.id===4, L5=L.id===5; if(L4)drawDecor4(L); else if(L5)drawDecor5(L);
+  const L4=L.id===4, L5=L.id>=5; if(L4)drawDecor4(L); else if(L.id===6)drawDecor6(L); else if(L5)drawDecor5(L);
   for(const wh of L.wheels) drawGear(wh,L);
   if(L.water)for(const w of L.water) if(inVis(w.x1,w.x2-w.x1))drawWater(w);
   for(const z of L.zips)drawZip(z);
@@ -80,10 +80,10 @@ function renderGame(dt=0){ const L=LV, cam=W.cam, P=W.P; const t=W.time;
   for(const s of L.solids) if(s.hollow&&inVis(s.x,s.w)){ ctx.fillStyle='#120804'; ctx.fillRect(s.x,s.y,s.w,400); ctx.save(); ctx.globalCompositeOperation='lighter'; glow(GLOW.hot,s.x+s.w/2,s.y+160,s.w,0.5+0.2*Math.sin(t*5)); ctx.restore(); }
   if(L4){ drawShades4(L); drawMechBack4(L); } else if(L5){ drawShafts5(L); drawMechBack4(L); drawHints5(L); }
   for(const c of L.crumbles) if(inVis(c.x,c.w))drawCrumble(c,L);
-  for(const m of L.movers)drawMover(m,L); for(const f of L.floes) if(inVis(f.x,f.w))drawFloe(f,L); for(const p of L.wheelPl)drawGearPl(p,L);
+  for(const m of L.movers)drawMover(m,L); for(const p of L.presses)drawPress(p,L); for(const f of L.floes) if(inVis(f.x,f.w))drawFloe(f,L); for(const p of L.wheelPl)drawGearPl(p,L);
   const tgt=(!P.rope&&!W.hook)?findAnchor(P):null; for(const a of L.anchors) if(inVis(a.x-20,40))drawAnchor(a,L,a===tgt);
   if(L.crates.length||L.pulls.length){ const tg=(!P.rope&&!W.hook&&!P.tow)?findGrab(P):null; drawMechFront4(L,tg); } else if(L4)drawWorm4();
-  if(L5)for(const g of L.gates) if(g.all&&inVis(g.x-40,g.w+80))drawFuseLamps(g);
+  if(L5)for(const g of L.gates) if(g.all&&inVis(g.x-40,g.w+80))drawFuseLamps(g); if(L.id===6)drawTimers6(L);
   for(const v of L.vents) if(inVis(v.x-40,80))drawVent(v,L);
   for(const b of L.braziers) if(inVis(b.x-40,80))drawBrazier(b,L);
   L.cps.forEach((c,i)=>{ if(inVis(c.x-60,60))drawCheckpoint(c,i,L); });
@@ -110,7 +110,7 @@ function renderGame(dt=0){ const L=LV, cam=W.cam, P=W.P; const t=W.time;
 function hudBar(g,x,y,w,h,f,c0,c1){ g.fillStyle='rgba(0,0,0,.5)'; chamferPath(g,x,y,w,h,3); g.fill(); if(f>0){ const gr=g.createLinearGradient(x,0,x+w,0); gr.addColorStop(0,c0); gr.addColorStop(1,c1); g.fillStyle=gr; chamferPath(g,x,y,Math.max(6,w*f),h,3); g.fill(); }
   g.strokeStyle='rgba(242,192,136,.35)'; g.lineWidth=1; chamferPath(g,x-.5,y-.5,w+1,h+1,3); g.stroke(); }
 function hudLabel(g,t,x,y,col='rgba(244,237,227,.8)'){ setFont(g,700,11,FONT_U); g.letterSpacing='2px'; g.fillStyle=col; g.fillText(t,x,y); g.letterSpacing='0px'; }
-function drawHUD(dt){ const g=U, P=W.P, L=LV; g.save(); g.textBaseline='alphabetic';
+function drawHUD(dt){ const g=U, P=W.P, L=LV; freezeOverlay(g); g.save(); g.textBaseline='alphabetic';
   // левая панель: температура + Печка
   const val=L.heat?P.heat:L.cold?P.cold:null; const px=28, py=22, pw=262, ph=val!==null?96:56;
   panel(g,px,py,pw,ph,{c:10,alpha:0.92});
@@ -151,7 +151,7 @@ function drawHUD(dt){ const g=U, P=W.P, L=LV; g.save(); g.textBaseline='alphabet
       panel(g,x,y,w,40,{c:9,rivets:false}); g.fillStyle=UI.accent; g.beginPath(); g.arc(x+22,y+20,5,0,7); g.fill(); g.globalAlpha=a*0.35; g.beginPath(); g.arc(x+22,y+20,10,0,7); g.fill(); g.globalAlpha=a; g.fillStyle='#ffe2bd'; g.fillText(t,x+40,y+26); g.restore(); }
     else { const a=clamp(Math.min(T.t/0.4,(6-T.t)/0.6),0,1); g.save(); g.globalAlpha=a; const name=SHARDS[T.id]||''; const fs=fitFont(g,name,700,26,FONT_T,620,16); const w=Math.max(360,g.measureText(name).width+80), h=62, x=VW/2-w/2, y=stackY+12;
       panel(g,x,y,w,h,{c:12,col:'#5fb8aa',rivetCol:'#9ff0e0',title:'НАЙДЕН ОСКОЛОК ПАМЯТИ',titleCol:'#9ff0e0'}); g.textAlign='center'; setFont(g,700,fs,FONT_T); textShadowed(g,name,VW/2,y+41,'#eafffb'); g.restore(); } }
-  hud4(g,P,L);
+  hud4(g,P,L); hudChrono(g);
   g.restore(); drawSubtitle(1,VH-70,true);
   if(SETTINGS.showFps)drawFps(); }
 function hud4(g,P,L){ if(L.id<4)return;

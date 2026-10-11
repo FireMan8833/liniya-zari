@@ -8,7 +8,7 @@ const HPART={ok:false,p:{}};
       const d=document.createElement('canvas'); d.width=v.w; d.height=v.h; const dg=d.getContext('2d'); dg.drawImage(im,0,0); dg.globalCompositeOperation='source-atop'; dg.fillStyle='rgba(18,12,20,.5)'; dg.fillRect(0,0,v.w,v.h);
       HPART.p[k]={img:c,dark:d,a:v.a,b:v.b,pang:Math.atan2(v.b[1]-v.a[1],v.b[0]-v.a[0]),plen:Math.hypot(v.b[0]-v.a[0],v.b[1]-v.a[1]),tint:{}};
       if(++n===need)HPART.ok=true; }; im.src=v.src; } })();
-const HGRADE={1:'#d6b49c',2:'#cdbdd8',3:'#bccadf',4:'#e6cdb4',5:'#cdc0d6'};
+const HGRADE={1:'#d6b49c',2:'#cdbdd8',3:'#bccadf',4:'#e6cdb4',5:'#cdc0d6',6:'#c8cce0'};
 const HOUT={1:'#140a06',2:'#f0c8a8',3:'#d8e8ff',4:'#140a06'};
 function partGrade(p,col,dark){ const key=(dark?'d':'n')+col; if(p.tint[key])return p.tint[key]; const src=dark?p.dark:p.img; const c=document.createElement('canvas'); c.width=src.width; c.height=src.height; const g=c.getContext('2d');
   g.drawImage(src,0,0); g.globalCompositeOperation='multiply'; g.fillStyle=col; g.fillRect(0,0,c.width,c.height); g.globalCompositeOperation='destination-in'; g.drawImage(src,0,0); return p.tint[key]=c; }

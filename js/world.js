@@ -17,14 +17,15 @@ function buildWorld(li){ LV=JSON.parse(JSON.stringify(LEVELS[li])); LV.idx=li;
   for(const m of LV.movers){m.x0=m.x;m.y0=m.y;m.vx=0;m.vy=0;}
   LV.wheelPl=[]; for(const wh of LV.wheels){ for(let i=0;i<wh.n;i++)LV.wheelPl.push({wh,i,x:0,y:0,w:wh.pw,h:16,vx:0,vy:0,k:'gearpl'}); }
   for(const c of LV.crates){ c.x0=c.x; c.y0=c.y; c.pvx=0; c.pvy=0; c.vx=0; c.vy=0; c.k='box'; c.crate=1; c.onG=false; }
-  for(const g of LV.gates){ g.open=0; g.latch=false; } for(const r of LV.receivers){ r.ch=0; r.done=false; } for(const p of LV.pulls){ p.done=false; } for(const pl of LV.plates){ pl.on=false; } W.flags={};
+  for(const g of LV.gates){ g.open=0; g.latch=false; } for(const r of LV.receivers){ r.ch=0; r.done=false; } for(const p of LV.pulls){ p.done=false; } for(const pl of LV.plates){ pl.on=false; } W.flags={}; W.mt=0; W.frz=0; W.frzCd=0; W.flagT={}; W.chr=false;
+  for(const p of LV.presses){ p.y=p.y0; p.vy=0; p.vx=0; p.k='press'; }
   W.worm={st:'idle',tr:0,t:0,x:0,sy:0}; W.sola=null; W.choice=null; W.beam=null;
   LV.colStatic=LV.solids.filter(s=>!s.hollow); LV.colStatic.push({x:-60,y:-2000,w:60,h:4000,k:'bound',slip:1},{x:LV.length,y:-2000,w:60,h:4000,k:'bound',slip:1});
   updateDynamics(0); }
 function respawn(ci){ const P=W.P; const cp=LV.cps[clamp(ci,0,LV.cps.length-1)]; W.cp=ci;
   const x=cp.x; let y=LV.spawn[1]; let best=1e9; for(const s of LV.colStatic){ if(x>=s.x&&x<=s.x+s.w&&s.y<best){best=s.y;} } y=best<1e9?best:y;
   Object.assign(P,{x,y,vx:0,vy:0,face:1,onGround:true,dead:0,rope:null,zip:null,heat:0,cold:0,dashT:0,lock:0,action:null,inv:0.5,wall:0,tow:null,cloak:null}); P.charge=Math.max(P.charge,0.5);
-  P.anim=newAnim(); W.hook=null; W.expo=0; W.goalP=0;
+  P.anim=newAnim(); W.hook=null; W.expo=0; W.goalP=0; W.frz=0; W.frzCd=0; for(const g of LV.gates) if(g.tm){ delete W.flagT[g.id]; for(const p of LV.pulls) if(p.link===g.id)p.done=false; }
   for(const c of LV.crumbles){c.st=0;c.t=0;} for(const f of LV.floes){f.sink=0;f.on=0;} for(const ic of LV.icicles){ic.st=0;ic.t=0;ic.y=ic.y0;ic.vy=0;}
   for(const c of LV.crates){ if(c.x0>=x-250||c.y>LV.killY){ c.x=c.x0; c.y=c.y0; c.pvx=c.pvy=c.vx=c.vy=0; c.snap=null; } } for(const r of LV.receivers) if(!r.done)r.ch=0;
   W.worm={st:'idle',tr:0,t:0,x:0,sy:0}; W.beam=null; if(W.choice&&!W.choice.done)W.choice=null;
@@ -35,17 +36,19 @@ function respawn(ci){ const P=W.P; const cp=LV.cps[clamp(ci,0,LV.cps.length-1)];
   W.cam.x=x+120; W.cam.y=y-120; W.ropeV.init=false; }
 // ---------- динамика объектов
 function easeCos(t,per){ return 0.5-0.5*Math.cos(t/per*Math.PI*2); }
-function updateDynamics(dt){ const t=W.time;
+function updateDynamics(dt){ const t=W.mt||0;
   for(const m of LV.movers){ const u=easeCos(t,m.per); const nx=lerp(m.x0,m.x2,u), ny=lerp(m.y0,m.y2,u); m.vx=dt?(nx-m.x)/dt:0; m.vy=dt?(ny-m.y)/dt:0; m.x=nx; m.y=ny; }
   for(const a of LV.anchors){ if(a.per){ const u=easeCos(t,a.per); const nx=lerp(a.mx,a.mx2,u); a.vx=dt?(nx-a.x)/dt:0; a.x=nx; } }
   for(const p of LV.wheelPl){ const wh=p.wh; const ang=t/wh.per*Math.PI*2+p.i/wh.n*Math.PI*2; const cx=wh.cx+Math.cos(ang)*wh.r, cy=wh.cy+Math.sin(ang)*wh.r;
     const nx=cx-p.w/2, ny=cy; p.vx=dt?(nx-p.x)/dt:0; p.vy=dt?(ny-p.y)/dt:0; p.x=nx; p.y=ny; }
   for(const f of LV.floes){ const ny=f.y0+f.sink; f.vy=dt?(ny-f.y)/dt:0; f.vx=0; f.y=ny; }
+  for(const p of LV.presses){ const u=(((t+(p.ph||0))%p.per)+p.per)%p.per/p.per; let k; if(u<0.1)k=(u/0.1)*(u/0.1); else if(u<0.3)k=1; else if(u<0.65)k=1-(u-0.3)/0.35; else k=0; const ny=p.y0+k*p.d; p.vy=dt?(ny-p.y)/dt:0; if(p.vy>0&&ny>=p.y0+p.d-0.5&&p.y<p.y0+p.d-0.5&&typeof sfx==='function'){ sfx('s_land',{vol:.8,rate:.55}); if(W.P&&Math.abs(W.P.x-p.x)<700)shake(2.5); } p.y=ny; p.warn=u>0.82; }
+  for(const m of LV.mirrors) if(m.rot){ const i=Math.floor((t+(m.ph||0))/m.rot)%2; const nt=i?m.t1:m.t0; if(nt!==m.t){ m.t=nt; m.flip=0.3; if(dt&&W.P&&Math.abs(W.P.x-m.x)<900)sfx('s_gate',{vol:.3,rate:1.6}); } }
   for(const d of LV.drones){ const u=easeCos(t,d.per); const nx=lerp(d.x1,d.x2,u); d.dir=nx>=(d.x??nx)?1:-1; d.x=nx; d.yy=d.y+Math.sin(t*2.1)*8; }
 }
 function colliders(){ const out=LV.colStatic.slice();
   for(const c of LV.crumbles) if(c.st<2) out.push(c);
-  for(const m of LV.movers) out.push(m); for(const f of LV.floes) out.push(f); for(const p of LV.wheelPl) out.push(Object.assign(p,{oneWay:1}));
+  for(const m of LV.movers) out.push(m); for(const p of LV.presses) out.push(p); for(const f of LV.floes) out.push(f); for(const p of LV.wheelPl) out.push(Object.assign(p,{oneWay:1}));
   for(const g of LV.gates){ const c=gateCol(g); if(c)out.push(c); } for(const c of LV.crates) out.push(c);
   return out; }
 function gateCol(g){ const c=g._c||(g._c={k:g.dir==='bridge'?'gatebr':g.dir==='lift'?'liftpl':'gate',gate:g,nowall:1}); if(g.dir==='lift'){ Object.assign(c,{x:g.x,y:g.y-g.h*g.open,w:g.w,h:18,oneWay:1,vx:0,vy:0}); return c; } if(g.dir==='bridge'){ const w=g.w*g.open; if(w<6)return null; Object.assign(c,{x:g.x,y:g.y,w,h:g.h}); } else { const h=g.h*(1-g.open); if(h<4)return null; Object.assign(c,{x:g.x,y:g.y,w:g.w,h}); } return c; }
@@ -77,7 +80,7 @@ function findGrab(P){ if(!LV.crates.length&&!LV.pulls.length)return null; const 
   const test=o=>{ const [x,y]=grabPt(o,P); const dx=x-gx, dy=y-gy, d=Math.hypot(dx,dy); if(d>PHY.ROPE||d<34)return; if(dx*P.face<-24)return; if(occluded(gx,gy,x,y))return; const s=d-(dx*P.face>0?80:0); if(s<bs){bs=s;best=o;} };
   for(const c of LV.crates) if(P.ground!==c&&!c.snap)test(c); for(const p of LV.pulls) if(!p.done)test(p); return best; }
 function fireGrab(P,o){ const [gx,gy]=gripPt(P); W.hook={x:gx,y:gy,a:{x:0,y:0},grab:o,miss:false,t:0}; sfx('s_grapple_fire',{vol:.7,rate:1.08}); W.ropeV.init=false; }
-function fireLink(id){ if(!id)return; if(W.flags)W.flags[id]=true; for(const g of LV.gates) if(g.id===id&&!g.latch){ g.latch=true; sfx('s_gate',{vol:.8}); shake(2); }
+function fireLink(id){ if(!id)return; if(W.flags)W.flags[id]=true; for(const g of LV.gates) if(g.id===id&&g.tm){ W.flagT[id]=W.mt; sfx('s_gate',{vol:.8}); } else if(g.id===id&&!g.latch){ g.latch=true; sfx('s_gate',{vol:.8}); shake(2); }
   for(const m of LV.mirrors) if(m.id===id&&m.alt&&m.t!==m.alt){ m.t=m.alt; m.flip=0.5; sfx('s_gate',{vol:.6,rate:1.3}); } }
 function fireHook(P){ const a=findAnchor(P); const [gx,gy]=gripPt(P);
   if(a){ W.hook={x:gx,y:gy,a,miss:false,t:0}; sfx('s_grapple_fire',{vol:.7}); }
@@ -87,7 +90,7 @@ function attachRope(P,a){ const [gx,gy]=gripPt(P); P.rope={a,att:true,L:clamp(Ma
   sfx('s_grapple_hit',{vol:.8}); shake(1.5); W.slowT=0.06; for(let i=0;i<10;i++)addP({x:a.x,y:a.y,vx:rnd(-200,200),vy:rnd(-200,120),life:rnd(.2,.5),size:rnd(1,2.2),type:'spark'}); }
 function releaseRope(P,boost){ if(!P.rope)return; P.rope=null; W.hook=null; if(boost){ P.vy=Math.min(P.vy-260,-420); P.vx*=1.1; sfx('s_jump',{vol:.6,rate:1.15}); W.slowT=0.08; } P.lock=0; }
 // ---------- основной шаг
-function stepWorld(dt){ W.time+=dt; const P=W.P; const I=inp(); updateDynamics(dt); updateMech(dt,I); const cols=colliders();
+function stepWorld(dt){ W.time+=dt; const P=W.P; const I=inp(); chronoStep(dt,I); if(!(W.frz>0))W.mt+=dt; updateDynamics(dt); pressKill(P); updateMech(dt,I); const cols=colliders();
   if(W.finished){ P.vx*=0.9; return; }
   if(P.dead){ P.dead+=dt; if(P.dead>0.85){ respawn(W.cp); } return; }
   P.inv=Math.max(0,P.inv-dt); P.lock=Math.max(0,P.lock-dt); P.dashCd=Math.max(0,P.dashCd-dt); P.dropT=Math.max(0,(P.dropT||0)-dt);
@@ -185,7 +188,7 @@ function kill(kind){ const P=W.P; if(P.dead||P.inv>0)return; if(W.god&&kind!=='f
   try{ if(typeof localStorage!=='undefined'){ const T=JSON.parse(localStorage.getItem('lz_tele')||'{}'); const k=LV.id+':'+Math.round(P.x/200)*200+':'+kind; T[k]=(T[k]||0)+1; localStorage.setItem('lz_tele',JSON.stringify(T)); } }catch(e){}
   for(let i=0;i<40;i++)addP({x:P.x+rnd(-10,10),y:P.y-rnd(0,56),vx:rnd(-160,160),vy:rnd(-260,40),life:rnd(.5,1.2),size:rnd(2,4),type:kind==='freeze'?'frost':kind==='fall'||kind==='worm'?'dust':'ember'});
   if(Math.random()<0.35&&typeof VOICE!=='undefined'&&!VOICE.busy())say([Math.random()<0.5?'d1':'d2']); }
-function postStep(P,dt,cols){ const L=LV; const t=W.time;
+function postStep(P,dt,cols){ const L=LV; const t=W.mt;
   // падение / вода
   if(P.y>L.killY)kill('fall');
   if(L.water)for(const w of L.water){ if(P.x>w.x1&&P.x<w.x2&&P.y>w.y+14)kill('freeze'); }
@@ -206,7 +209,7 @@ function postStep(P,dt,cols){ const L=LV; const t=W.time;
   let seen=false; const pcx=P.x, pcy=P.y-30;
   for(const s of L.sentinels){ s.ang=s.base+s.amp*Math.sin(t/s.per*Math.PI*2+s.ph); const dx=pcx-s.x, dy=pcy-s.y, d=Math.hypot(dx,dy); if(d<720){ let da=Math.atan2(dy,dx)-s.ang; da=Math.atan2(Math.sin(da),Math.cos(da)); if(Math.abs(da)<0.17&&!occluded(s.x,s.y+20,pcx,pcy)&&!occluded(s.x,s.y+20,pcx,P.y-50))seen=true; } }
   for(const d of L.drones){ const dx=pcx-d.x, dy=pcy-d.yy; if(dy>0&&dy<460&&Math.abs(dx)<dy*0.36+10&&!occluded(d.x,d.yy+12,pcx,pcy)&&!occluded(d.x,d.yy+12,pcx,P.y-50))seen=true; }
-  W.seen=seen; W.expo=seen?W.expo+dt/0.55:Math.max(0,W.expo-dt*1.5); if(seen&&!W.alarm){ sfx('s_alarm',{vol:.5}); } W.alarm=seen; if(W.expo>=1){ W.expo=0; kill('burn'); }
+  W.seen=seen; W.expo=seen?W.expo+dt/(L.expoT||0.55):Math.max(0,W.expo-dt*1.5); if(seen&&!W.alarm){ sfx('s_alarm',{vol:.5}); } W.alarm=seen; if(W.expo>=1){ W.expo=0; kill('burn'); }
   // сосульки
   for(const ic of L.icicles){ if(ic.st===0&&Math.abs(P.x-ic.x)<80&&P.y>ic.y){ ic.st=1; ic.t=0; sfx('s_crumble',{vol:.5,rate:1.6}); }
     if(ic.st===1){ ic.t+=dt; if(ic.t>0.42){ic.st=2;} }
@@ -214,7 +217,7 @@ function postStep(P,dt,cols){ const L=LV; const t=W.time;
       for(const s of LV.colStatic){ if(!s.oneWay&&ic.x>s.x&&ic.x<s.x+s.w&&ic.y+46>s.y&&ic.y<s.y+10){ ic.st=3; sfx('s_crumble',{vol:.6,rate:1.4}); for(let i=0;i<14;i++)addP({x:ic.x,y:s.y-2,vx:rnd(-200,200),vy:rnd(-260,-40),life:rnd(.4,.8),size:rnd(1.5,3),type:'frost'}); shake(1.5); break; } } if(ic.y>L.killY)ic.st=3; } }
   // крошащиеся панели
   for(const c of L.crumbles){ if(c.st===0&&P.onGround&&P.ground===c){ c.st=1; c.t=0; sfx('s_crumble',{vol:.6}); }
-    if(c.st===1){ c.t+=dt; if(c.t>0.42){ c.st=2; for(let i=0;i<10;i++)addP({x:c.x+rnd(0,c.w),y:c.y+rnd(0,c.h),vx:rnd(-60,60),vy:rnd(-40,120),life:rnd(.6,1.2),size:rnd(3,6),type:'debris'}); } } }
+    if(c.st===1){ if(!(W.frz>0))c.t+=dt; if(c.t>0.42){ c.st=2; for(let i=0;i<10;i++)addP({x:c.x+rnd(0,c.w),y:c.y+rnd(0,c.h),vx:rnd(-60,60),vy:rnd(-40,120),life:rnd(.6,1.2),size:rnd(3,6),type:'debris'}); } } }
   // льдины
   for(const f of L.floes){ const on=P.onGround&&P.ground===f; if(on){ f.on+=dt; if(f.on>0.35)f.sink=Math.min(60,f.sink+38*dt); } else { f.on=0; f.sink=Math.max(0,f.sink-25*dt); } }
   // угольки
@@ -250,9 +253,11 @@ function updateMech(dt,I){ const L=LV; if(!L.crates.length&&!L.gates.length)retu
   // плиты: нажаты, пока на них стоит ящик
   for(const pl of L.plates){ const was=pl.on; const cr=L.crates.find(c=>Math.abs(c.y+c.h-pl.y)<4&&Math.min(c.x+c.w,pl.x+pl.w)-Math.max(c.x,pl.x)>=30); pl.on=!!cr; if(cr&&!cr.snap){ cr.snap=pl; if(P.tow&&P.tow.c===cr)P.tow=null; } if(pl.on!==was)sfx('s_plate',{vol:.7,rate:pl.on?1:0.8}); }
   // створки
-  for(const g of L.gates){ let tgt=(g.all?g.all.every(linkOn):(g.latch||linkOn(g.id)))?1:0; const o=g.open;
+  const frz=W.frz>0;
+  for(const p of L.pulls){ if(!p.done)continue; const g=L.gates.find(q=>q.id===p.link&&q.tm); if(g&&!frz&&(W.flagT[g.id]==null||W.mt-W.flagT[g.id]>=g.tm)){ p.done=false; delete W.flagT[g.id]; } }
+  for(const g of L.gates){ let tgt=(g.tm?(W.flagT[g.id]!=null&&W.mt-W.flagT[g.id]<g.tm):g.all?g.all.every(linkOn):(g.latch||linkOn(g.id)))?1:0; const o=g.open;
     if(g.cargo){ const top=g.y-g.h*o, gc=gateCol(g); g.load=L.crates.some(c=>Math.abs(c.y+c.h-top)<5&&Math.min(c.x+c.w,g.x+g.w)-Math.max(c.x,g.x)>=40); g.rider=liftRider(g,top);
-      const want=g.load&&g.rider; g.wt=want?(g.wt||0)+dt:0; tgt=(g.wt>0.6||(o>0&&(g.load||g.rider)))?1:0; } const sp=(g.spd||1.5)*dt; g.open=tgt>o?Math.min(1,o+sp):tgt<o?Math.max(0,o-sp):o; g.vy=g.dir==='lift'&&dt?-(g.open-o)*g.h/dt:0;
+      const want=g.load&&g.rider; g.wt=want?(g.wt||0)+dt:0; tgt=(g.wt>0.6||(o>0&&(g.load||g.rider)))?1:0; } const sp=frz?0:(g.spd||1.5)*dt; g.open=tgt>o?Math.min(1,o+sp):tgt<o?Math.max(0,o-sp):o; g.vy=g.dir==='lift'&&dt?-(g.open-o)*g.h/dt:0;
     if(g.dir==='lift'&&g.open!==o){ const d=(g.open-o)*g.h, top=g.y-g.h*o; for(const c of L.crates){ if(Math.abs(c.y+c.h-top)<5&&c.x+c.w>g.x+4&&c.x<g.x+g.w-4){ c.y-=d; c.pvy=0; } } if(liftRider(g,top)){ P.y-=d; P.vy=Math.max(0,P.vy); } if(Math.random()<dt*8)sfx('s_chain',{vol:.25,rate:.8}); }
     if(o!==g.open&&(g.open===1||g.open===0))sfx('s_gate',{vol:.5,rate:g.open?1.1:0.9}); if(o===0&&g.open>0||o===1&&g.open<1)sfx('s_gate',{vol:.6}); }
   for(const m of L.mirrors) if(m.flip)m.flip=Math.max(0,m.flip-dt);
@@ -318,6 +323,11 @@ function wormStep(P,dt){ const wm=W.worm; const r=sandRange(P.x); const onSand=r
   else if(wm.st==='burst'){ wm.t+=dt; if(wm.t>1.4){ wm.st='idle'; wm.tr=0.35; } }
   else if(wm.st==='flee'){ wm.t+=dt; wm.x+=(wm.x<P.x?-1:1)*420*dt; if(wm.t>0.9){ wm.st='idle'; } }
   W.wormVib=wm.st==='warn'?1:wm.tr; }
+// ---------- Хронометр Навигаторов (глава VI): R — механизмы замирают на 3 с
+function chronoStep(dt,I){ const L=LV; if(!L.chrono)return; const P=W.P; if(!W.chr&&P.x>L.chrono){ W.chr=true; }
+  if(W.frz>0){ W.frz=Math.max(0,W.frz-dt); if(W.frz===0){ W.frzCd=L.chronoCd||4.5; sfx('s_unfreeze',{vol:.7}); } } else W.frzCd=Math.max(0,W.frzCd-dt);
+  if(W.chr&&I.hit('time')&&W.frz<=0&&W.frzCd<=0&&!P.dead&&!W.finished){ W.frz=L.chronoT||3; sfx('s_freeze',{vol:.85}); W.shock.push({x:P.x,y:P.y-30,t:0,r:300}); W.flashCA=0.6; W.frzFx=0; } }
+function pressKill(P){ if(P.dead)return; for(const p of LV.presses){ if(p.vy>0&&ov(P.x-PHY.PW/2+3,P.y-PHY.PH+4,PHY.PW-6,PHY.PH-6,p))kill('crush'); } }
 // ---------- обновление частиц/эффектов (раз за кадр)
 function updateFx(dt){ for(const p of W.parts){ p.t+=dt; p.x+=p.vx*dt; p.y+=p.vy*dt;
     if(p.type==='spark'||p.type==='debris'||p.type==='frost'||p.type==='snowp'){ p.vy+=900*dt; } else if(p.type==='ember'||p.type==='heat'){ p.vy-=40*dt; p.vx*=0.98; } else if(p.type==='steam'||p.type==='smoke'){ p.vx*=0.96; p.vy*=0.96; p.size+=dt*14; } else if(p.type==='dust'){ p.vx*=0.94; p.vy*=0.94; p.size+=dt*4; } else if(p.type==='glint'){ p.vx*=0.92; p.vy*=0.92; } }

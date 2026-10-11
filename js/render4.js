@@ -106,5 +106,5 @@ function drawDecor4(L){ for(const d of L.decor){ if(d.k==='mtower'&&inVis(d.x-80
 function drawMechBack4(L){ for(const pl of L.plates) if(inVis(pl.x,pl.w))drawPlate(pl); for(const g of L.gates) if(inVis(g.x-20,g.w+40))drawGate(g);
   drawMirrorHint(L); for(const m of L.mirrors) if(inVis(m.x-40,80))drawMirror(m); for(const r of L.receivers) if(inVis(r.x-40,80))drawReceiver(r);
   for(const m of L.marks) if(inVis(m.x-30,60))drawMark(m);
-  for(const n of L.npcs){ if(!inVis(n.x-40,80))continue; if(n.k==='mara'){ drawMara(n); continue; } const show=n.when==='camp'?W.sola!=='take':W.sola==='take'; if(show)drawSola(n); } }
+  for(const n of L.npcs){ if(!inVis(n.x-40,80))continue; if(n.k==='mara'){ drawMara(n); continue; } if(n.k==='teo'){ drawTeo(n); continue; } const show=n.when==='camp'?W.sola!=='take':W.sola==='take'; if(show)drawSola(n); } }
 function drawMechFront4(L,tg){ for(const p of L.pulls) if(inVis(p.x-30,140))drawPull(p,tg===p); for(const c of L.crates) if(inVis(c.x,c.w))drawCrate(c,tg===c); drawWorm4(); }

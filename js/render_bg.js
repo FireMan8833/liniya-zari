@@ -41,6 +41,20 @@ function prepLevelArt(L){ const key='lv'+L.id; if(BG[key])return BG[key];
         mg.fillStyle='rgba(255,236,200,.35)'; mg.fillRect(x,620-h-w/2+1,w,2); }
       else if(k<0.75){ const h=r(160,300); mg.fillRect(x,620-h,8,h); mg.strokeStyle='#7a5034'; mg.lineWidth=2; mg.beginPath(); for(let y2=620;y2>620-h+20;y2-=34){ mg.moveTo(x-14,y2); mg.lineTo(x+22,y2-34); mg.moveTo(x+22,y2); mg.lineTo(x-14,y2-34);} mg.stroke(); mg.fillStyle='rgba(255,252,236,.85)'; mg.fillRect(x-24,620-h-6,56,4); }
       else { const w=r(120,200); mg.beginPath(); mg.moveTo(x,630); mg.lineTo(x+20,600); mg.lineTo(x+w*0.7,590); mg.lineTo(x+w,612); mg.lineTo(x+w,630); mg.fill(); for(let i=0;i<3;i++){ mg.beginPath(); mg.arc(x+30+i*45,630,14,0,7); mg.fill(); } } }
+  } else if(L.id===6){
+    // дальний план: рёбра корпуса «Зари», купола, телескопы, звёзды в проломах
+    for(let layer=0;layer<2;layer++){ const base=450+layer*50; const col=layer?'rgba(24,30,50,.92)':'rgba(52,62,96,.55)'; fg.fillStyle=col; fg.strokeStyle=col;
+      for(let x=-60;x<farW;x+=r(160,320)){ const h=r(180,layer?300:380); fg.lineWidth=layer?14:9; fg.beginPath(); fg.moveTo(x,base+200); fg.quadraticCurveTo(x+r(-20,40),base-h,x+r(120,220),base-h-r(20,80)); fg.stroke();
+        if(R()<0.35){ const w=r(60,140); fg.beginPath(); fg.arc(x+w,base-r(40,120),w*0.6,Math.PI,0); fg.fill(); fg.fillRect(x+w*0.4,base-r(40,120),w*1.2,300); }
+        if(R()<0.4){ fg.fillStyle='rgba(255,214,150,.5)'; fg.fillRect(x+r(10,100),base-r(20,h*0.6),2,2); fg.fillStyle=col; } }
+      fg.fillRect(0,base,farW,300); }
+    // средний план: гигантские шестерни, маятники, латунные фермы
+    for(let x=0;x<midW;x+=r(240,420)){ const k=R(); mg.fillStyle='#121624'; mg.strokeStyle='#121624';
+      if(k<0.35){ const rr=r(70,130), cy=620-rr-r(40,180); mg.beginPath(); for(let i=0;i<24;i++){ const an=i/24*Math.PI*2; const q=i%2?rr:rr*0.86; mg.lineTo(x+Math.cos(an)*q,cy+Math.sin(an)*q); } mg.fill(); mg.fillStyle='rgba(255,214,150,.14)'; mg.beginPath(); mg.arc(x,cy,rr*0.8,Math.PI*1.1,Math.PI*1.5); mg.arc(x,cy,rr*0.74,Math.PI*1.5,Math.PI*1.1,true); mg.fill(); }
+      else if(k<0.6){ const top=r(80,200), len=r(220,340); mg.lineWidth=4; mg.beginPath(); mg.moveTo(x,top); mg.lineTo(x+r(-40,40),top+len); mg.stroke(); mg.beginPath(); mg.arc(x+r(-40,40),top+len,r(18,30),0,7); mg.fill(); mg.fillRect(x-30,top-8,60,8); }
+      else if(k<0.85){ const h=r(200,340), w=r(36,56); mg.lineWidth=3; mg.strokeRect(x,620-h,w,h); mg.lineWidth=2; for(let yy=620-h;yy<620;yy+=w){ mg.beginPath(); mg.moveTo(x,yy); mg.lineTo(x+w,yy+w); mg.moveTo(x+w,yy); mg.lineTo(x,yy+w); mg.stroke(); } mg.fillStyle='rgba(255,214,150,.3)'; mg.fillRect(x-14,620-h-6,w+28,3); }
+      else { mg.lineWidth=2; mg.beginPath(); const x2=x+r(200,320), yy=r(200,320); mg.moveTo(x,yy); mg.quadraticCurveTo((x+x2)/2,yy+r(60,120),x2,yy); mg.stroke(); } }
+    mg.fillStyle='#0c0f1a'; mg.fillRect(0,610,midW,200);
   } else if(L.id===5){
     // дальний план: силуэт города-ковчега — горы вагонов, башни, огоньки окон
     for(let layer=0;layer<2;layer++){ const base=440+layer*50; fg.fillStyle=layer?'rgba(36,26,50,.92)':'rgba(70,52,92,.55)';
@@ -67,7 +81,7 @@ function prepLevelArt(L){ const key='lv'+L.id; if(BG[key])return BG[key];
   out.far=far; out.mid=mid; BG[key]=out; return out; }
 // облака/дымка: мягкие полосы
 const CLOUD=(()=>{ const c=mkCanvas(512,128), g=c.getContext('2d'); for(let i=0;i<40;i++){ const x=Math.random()*512, y=64+Math.random()*30-15, r=20+Math.random()*50; const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,'rgba(255,255,255,.35)'); gr.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=gr; g.fillRect(x-r,y-r,r*2,r*2); } return c; })();
-const SUNPOS={1:[0.27,0.4],2:[0.11,0.49],3:[0.05,0.72],4:[0.5,0.44],5:[0.72,0.36]};
+const SUNPOS={1:[0.27,0.4],2:[0.11,0.49],3:[0.05,0.72],4:[0.5,0.44],5:[0.72,0.36],6:[0.62,0.72]};
 function hex3(h){ const p=parseInt(h.slice(1),16); return [(p>>16)/255,((p>>8)&255)/255,(p&255)/255]; }
 // GPU-путь: всё небо и дальние слои рисуются одним шейдером (post.js, программа bg)
 function skyGL(L,cam){ const img=IMG[L.sky]; if(!img)return false; const t=W.time; const A=prepLevelArt(L); const pal=L.pal;
@@ -75,8 +89,8 @@ function skyGL(L,cam){ const img=IMG[L.sky]; if(!img)return false; const t=W.tim
   const ox=-(dw-VW)*u*0.9, oy=-(dh-VH)*0.5-clamp((cam.y-400)*0.04,-30,30); const sp=SUNPOS[L.id]; const sx=ox+sp[0]*dw, sy=oy+sp[1]*dh; L._sun=[sx,sy];
   const yShift=(p)=>-(cam.y-420)*p*0.6;
   Object.assign(BGP,{sky:img,skyR:[ox,oy,dw,dh],far:A.far,mid:A.mid,farR:[-cam.x*0.1-100,yShift(0.1),A.far.width,A.far.height],midR:[-cam.x*0.3-100,yShift(0.3)+20,A.mid.width,A.mid.height],
-    sun:[sx,sy],lid:L.id,t,camx:cam.x,pul:0.85+0.15*Math.sin(t*1.3),fogC:L._fog3||(L._fog3=hex3(pal.fog)),fogA:pal.fogA,cloudA:L.id===1?0.22:L.id===2?0.18:L.id===4||L.id===5?0.1:0.12,
-    g1c:L.id===1||L.id===4?[1,0.96,0.86]:[1,0.48,0.16],g1r:L.id===1?260:L.id===4?300:L.id===5?160:220,g1a:L.id===1?0.2:L.id===4?0.06:L.id===5?0.25:0.35,shC:L.id===1||L.id===4?[1,0.94,0.78]:[1,0.69,0.5],shA:0.9});
+    sun:[sx,sy],lid:L.id,t,camx:cam.x,pul:0.85+0.15*Math.sin(t*1.3),fogC:L._fog3||(L._fog3=hex3(pal.fog)),fogA:pal.fogA,cloudA:L.id===1?0.22:L.id===2?0.18:L.id>=4?0.1:0.12,
+    g1c:L.id===1||L.id===4?[1,0.96,0.86]:[1,0.48,0.16],g1r:L.id===1?260:L.id===4?300:L.id>=5?160:220,g1a:L.id===1?0.2:L.id===4?0.06:L.id===5?0.25:L.id===6?0.18:0.35,shC:L.id===1||L.id===4?[1,0.94,0.78]:[1,0.69,0.5],shA:0.9});
   FX.bg=1; return true; }
 function drawSky(L,cam){ if(POST.ok&&skyGL(L,cam))return; const img=IMG[L.sky]; const t=W.time;
   if(img){ const s=Math.max(VW/img.width,VH*1.12/img.height); const dw=img.width*s, dh=img.height*s; const u=clamp(cam.x/L.length,0,1);
@@ -88,7 +102,7 @@ function drawSky(L,cam){ if(POST.ok&&skyGL(L,cam))return; const img=IMG[L.sky]; 
         ctx.beginPath(); ctx.moveTo(0,yy); for(let x=0;x<=VW;x+=40)ctx.lineTo(x,yy+Math.sin(x*0.006+t*0.35+i)*40); ctx.lineTo(VW,yy+80); for(let x=VW;x>=0;x-=40)ctx.lineTo(x,yy+70+Math.sin(x*0.005+t*0.3+i*1.7)*50); ctx.fill(); } ctx.restore(); ctx.globalAlpha=1; } }
   else { ctx.fillStyle='#333'; ctx.fillRect(0,0,VW,VH); }
   // звёзды мерцают (II, III)
-  if(L.id===2||L.id===3){ if(!L._stars){ const R=seeded(7); L._stars=Array.from({length:90},()=>({x:R()*VW,y:R()*VH*0.45,p:R()*6,s:R()*1.4+0.4})); }
+  if(L.id===2||L.id===3||L.id===6){ if(!L._stars){ const R=seeded(7); L._stars=Array.from({length:90},()=>({x:R()*VW,y:R()*VH*0.45,p:R()*6,s:R()*1.4+0.4})); }
     ctx.save(); ctx.globalCompositeOperation='lighter'; for(const s of L._stars){ ctx.globalAlpha=(0.25+0.5*Math.abs(Math.sin(t*1.5+s.p)))*(L.id===2?clamp((s.x/VW-0.3)*2,0,1):1); ctx.fillStyle='#fff'; ctx.fillRect(s.x,s.y,s.s,s.s);} ctx.restore(); ctx.globalAlpha=1; }
   // дрейфующие облака/дымка
   ctx.save(); ctx.globalAlpha=L.id===1?0.22:L.id===2?0.18:0.12; const cc=L.id===1?'#ffcf9a':L.id===2?'#e8a8c8':'#a8d8ff';

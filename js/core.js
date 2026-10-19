@@ -37,7 +37,7 @@ function getSave(){try{return JSON.parse(localStorage.getItem('lz_save')||'null'
 function setSave(o){localStorage.setItem('lz_save',JSON.stringify(o))}
 
 // ----- изображения
-const IMG={}; const IMG_LIST=['cover','city','planet','crash','fault','bg_hot','bg_cold','ending','hero','sky1','sky2','sky3','tex1','tex2','tex3','tex4','p_irma','p_avram','p_sola','sola_full','recv','sky5','tex5','p_mara','p_veil','mara_full','sky6','tex6','p_teo','teo_full','st5_1','st5_2','st5_3','st5_4','st5_5','st5_6','st6_1','st6_2','st6_3','st6_4','st6_5','sky7','sky8','cine7','cine8'];
+const IMG={}; const IMG_LIST=['cover','city','planet','crash','fault','bg_hot','bg_cold','ending','hero','sky1','sky2','sky3','tex1','tex2','tex3','tex4','p_irma','p_avram','p_sola','sola_full','recv','sky5','tex5','p_mara','p_veil','mara_full','sky6','tex6','p_teo','teo_full','st5_1','st5_2','st5_3','st5_4','st5_5','st5_6','st6_1','st6_2','st6_3','st6_4','st6_5','sky7','sky8','cine7','cine8','pump9'];
 function loadImages(){return Promise.all(IMG_LIST.map(n=>new Promise(r=>{const i=new Image();i.onload=()=>{IMG[n]=i;r()};i.onerror=()=>r();i.src=(window.ASSETS_IMG&&ASSETS_IMG[n])||('img/'+n+'.jpg');}))).then(()=>{ if(IMG.bg_hot&&!IMG.sky4)IMG.sky4=IMG.bg_hot; });}
 function drawCover(img,x,y,w,h,zoom=1,px=0.5,py=0.5,c=ctx){ if(!img)return; const s=Math.max(w/img.width,h/img.height)*zoom;
   const dw=img.width*s,dh=img.height*s; c.drawImage(img,x+(w-dw)*px,y+(h-dh)*py,dw,dh);}

@@ -251,13 +251,13 @@ function liftRider(g,top){ const P=W.P; return !P.dead&&P.onGround&&Math.abs(P.y
 function linkOn(id){ return !!(W.flags&&W.flags[id])||LV.plates.some(pl=>pl.link===id&&pl.on); }
 function updateMech(dt,I){ const L=LV; if(!L.crates.length&&!L.gates.length)return; const P=W.P;
   // плиты: нажаты, пока на них стоит ящик
-  for(const pl of L.plates){ const was=pl.on; const cr=L.crates.find(c=>Math.abs(c.y+c.h-pl.y)<4&&Math.min(c.x+c.w,pl.x+pl.w)-Math.max(c.x,pl.x)>=30); pl.on=!!cr; if(cr&&!cr.snap){ cr.snap=pl; if(P.tow&&P.tow.c===cr)P.tow=null; } if(pl.on!==was)sfx('s_plate',{vol:.7,rate:pl.on?1:0.8}); }
+  for(const pl of L.plates){ const was=pl.on; const cr=L.crates.find(c=>Math.abs(c.y+c.h-pl.y)<4&&Math.min(c.x+c.w,pl.x+pl.w)-Math.max(c.x,pl.x)>=30); pl.on=!!cr; if(pl.on&&L.id===6&&/^K[13]$/.test(pl.link))W.flags[pl.link]=true; if(cr&&!cr.snap){ cr.snap=pl; if(P.tow&&P.tow.c===cr)P.tow=null; } if(pl.on!==was)sfx('s_plate',{vol:.7,rate:pl.on?1:0.8}); }
   // створки
   const frz=W.frz>0;
   for(const p of L.pulls){ if(!p.done)continue; const g=L.gates.find(q=>q.id===p.link&&q.tm); if(g&&!frz&&(W.flagT[g.id]==null||W.mt-W.flagT[g.id]>=g.tm)){ p.done=false; delete W.flagT[g.id]; } }
-  for(const g of L.gates){ let tgt=(g.tm?(W.flagT[g.id]!=null&&W.mt-W.flagT[g.id]<g.tm):g.all?g.all.every(linkOn):(g.latch||linkOn(g.id)))?1:0; const o=g.open;
+  for(const g of L.gates){ if(g.tm&&g.dir==='up'&&P.x>g.x+g.w+PHY.PW&&W.flagT[g.id]!=null)g.passed=true; let tgt=(g.tm?(W.flagT[g.id]!=null&&W.mt-W.flagT[g.id]<g.tm):g.all?g.all.every(linkOn):(g.latch||linkOn(g.id)))?1:0; if(g.passed)tgt=1; const o=g.open;
     if(g.cargo){ const top=g.y-g.h*o, gc=gateCol(g); g.load=L.crates.some(c=>Math.abs(c.y+c.h-top)<5&&Math.min(c.x+c.w,g.x+g.w)-Math.max(c.x,g.x)>=40); g.rider=liftRider(g,top);
-      const want=g.load&&g.rider; g.wt=want?(g.wt||0)+dt:0; tgt=(g.wt>0.6||(o>0&&(g.load||g.rider)))?1:0; } const sp=frz?0:(g.spd||1.5)*dt; g.open=tgt>o?Math.min(1,o+sp):tgt<o?Math.max(0,o-sp):o; g.vy=g.dir==='lift'&&dt?-(g.open-o)*g.h/dt:0;
+      const want=g.load&&g.rider; g.wt=want?(g.wt||0)+dt:0; tgt=(g.wt>0.6||(o>0&&(g.load||g.rider)))?1:0; } if(g.dir==='up'&&tgt<g.open&&(Math.abs(P.x-(g.x+g.w/2))<g.w/2+PHY.PW||L.crates.some(c=>c.x+c.w>g.x-6&&c.x<g.x+g.w+6)))tgt=g.open; const sp=frz?0:(g.spd||1.5)*dt; g.open=tgt>o?Math.min(1,o+sp):tgt<o?Math.max(0,o-sp):o; g.vy=g.dir==='lift'&&dt?-(g.open-o)*g.h/dt:0;
     if(g.dir==='lift'&&g.open!==o){ const d=(g.open-o)*g.h, top=g.y-g.h*o; for(const c of L.crates){ if(Math.abs(c.y+c.h-top)<5&&c.x+c.w>g.x+4&&c.x<g.x+g.w-4){ c.y-=d; c.pvy=0; } } if(liftRider(g,top)){ P.y-=d; P.vy=Math.max(0,P.vy); } if(Math.random()<dt*8)sfx('s_chain',{vol:.25,rate:.8}); }
     if(o!==g.open&&(g.open===1||g.open===0))sfx('s_gate',{vol:.5,rate:g.open?1.1:0.9}); if(o===0&&g.open>0||o===1&&g.open<1)sfx('s_gate',{vol:.6}); }
   for(const m of L.mirrors) if(m.flip)m.flip=Math.max(0,m.flip-dt);

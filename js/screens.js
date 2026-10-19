@@ -2,7 +2,7 @@
 // ===== экраны: заставка, меню, главы, ролик, пауза, итоги, финал; главный цикл =====
 let STATE='loading', ST={t:0};
 const IS_ELECTRON=/Electron/i.test(navigator.userAgent);
-const VERSION='v0.7.0';
+const VERSION='v0.8.0';
 if(!SETTINGS.fx)SETTINGS.fx='high';
 function setState(s,o={}){ STATE=s; ST=Object.assign({t:0,sel:0},o); MOUSE.click=false; }
 function loadSave(){ return Object.assign({chapter:0,cp:0,unlocked:0,shards:[],done:false,deaths:0,time:0},getSave()||{}); }
@@ -43,7 +43,7 @@ function bgMenu(img='cover'){ const t=performance.now()/1000; const mx=(MOUSE.x/
   Object.assign(FX,{bloom:0.5,thr:0.7,vign:0.45,grain:0.05,sat:1.05}); }
 function drawTitle(x,y,size=84,a=1){ const g=U; g.save(); g.globalAlpha=a; g.textAlign='left'; setFont(g,700,size,FONT_T); g.letterSpacing=(size*0.05)+'px';
   g.shadowColor='rgba(255,140,60,.45)'; g.shadowBlur=24; g.fillStyle='#fff3e4'; g.fillText('ЛИНИЯ ЗАРИ',x,y); g.shadowBlur=0;
-  const w=g.measureText('ЛИНИЯ ЗАРИ').width; g.letterSpacing='5px'; setFont(g,700,13,FONT_U); g.fillStyle=UI.accent; g.fillText('ЧАСТЬ I  ·  ШЕСТЬ ГЛАВ',x+4,y+34);
+  const w=g.measureText('ЛИНИЯ ЗАРИ').width; g.letterSpacing='5px'; setFont(g,700,13,FONT_U); g.fillStyle=UI.accent; g.fillText('ЧАСТЬ I  ·  ВОСЕМЬ ГЛАВ',x+4,y+34);
   g.strokeStyle='rgba(201,138,75,.7)'; g.lineWidth=1.2; g.beginPath(); g.moveTo(x+240,y+29); g.lineTo(x+Math.max(300,w-20),y+29); g.stroke(); g.restore(); }
 function screenSplash(){ ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,VH); ST.t+=FDT; const a=clamp(ST.t/1.2,0,1); const g=U;
   g.save(); g.globalAlpha=a; g.textAlign='center'; setFont(g,700,64,FONT_T); g.letterSpacing='5px'; g.fillStyle='#fff1e0'; g.fillText('ЛИНИЯ ЗАРИ',VW/2,VH/2-14); g.letterSpacing='0px';
@@ -62,9 +62,9 @@ function screenMenu(){ bgMenu(); drawTitle(84,200); SAVE=loadSave(); const has=S
   menuList(items,px+44,py+52,{gap,w:pw-70,noteY:py+ph+28});
   hintBar(`${VERSION}  ·  ↑↓ — выбор  ·  Enter — подтвердить  ·  F11 — полный экран  ·  F3 — FPS`,64,VH-30,false); }
 function screenChapters(){ const li=ST.sel<LEVELS.length?ST.sel:0; bgMenu(LEVELS[li].sky); const g=U;
-  const x=64,y=70,w=600,h=500; const cy=windowFrame('Главы',x,y,w,h,'ВЫБЕРИТЕ ГЛАВУ');
+  const x=64,y=70,w=740,h=620; const cy=windowFrame('Главы',x,y,w,h,'ВЫБЕРИТЕ ГЛАВУ');
   const items=LEVELS.map((L,i)=>({label:`${L.sub}. ${L.name}`,disabled:i>(SAVE.unlocked||0),note:i>(SAVE.unlocked||0)?'Глава ещё не открыта':`${CH_LINE[i]}  Осколки памяти: ${L.shards.filter(s=>SAVE.shards.includes(s.id)).length} / ${L.shards.length}`,act:()=>{ AUD.stopMusic(1); startChapter(i,0); }}));
-  items.push({label:'Назад',act:()=>setState('menu',{sel:2})}); menuList(items,x+56,cy+52,{gap:56,w:w-90,noteY:y+h-56});
+  items.push({label:'Назад',act:()=>setState('menu',{sel:2})}); menuList(items,x+56,cy+52,{gap:48,w:w-90,noteY:y+h-56});
   if(INPUT.hit('back'))setState('menu',{sel:2}); }
 function vol(name){ return {label:{music:'Музыка',voice:'Голоса',sfx:'Эффекты'}[name],value:()=>'▮'.repeat(SETTINGS[name])+'▯'.repeat(10-SETTINGS[name]),adj:d=>{SETTINGS[name]=clamp(SETTINGS[name]+d,0,10);saveSettings();},act:()=>{SETTINGS[name]=(SETTINGS[name]+1)%11;saveSettings();}}; }
 let LZCFG=null; if(window.LZ)LZ.getCfg().then(c=>LZCFG=c).catch(()=>{});
@@ -85,7 +85,7 @@ function screenSettings(){ if(ST.from==='pause'){ renderGame(); ctx.setTransform
   menuList(items,x+56,cy+42,{small:true,gap:38,w:w-90,noteY:y+h-58}); if(INPUT.hit('back'))back(); }
 function screenControls(){ if(ST.from==='pause'){ renderGame(); ctx.setTransform(RS,0,0,RS,0,0); overlayDim(.6);} else bgMenu(); const g=U;
   const x=64,y=20,w=1060,h=640; const cy=windowFrame('Управление',x,y,w,h);
-  const rows=[['A D  /  ← →','Стик / крестовина','Бег'],['Пробел  /  W  /  ↑','A','Прыжок (держите — выше); у стены — прыжок от стены'],['E (держать)','X','Клюв: зацеп за кольцо, канатка, действие у цели'],['A D / ← → на тросе','Стик','Раскачка'],['W S / ↑ ↓ на тросе','Стик ↑↓','Подтянуться / отпустить трос'],['Пробел на тросе','A','Сорваться с ускорением'],['Shift (+W вверх)','RB / B','Термо-рывок (¼ заряда Печки)'],['Q (держать)','LB / Y','Обогрев на холоде · плащ-отражатель в Пекле (← → / A D — поворот, ↑ / W — выше)'],['S / ↓ (держать)','Стик ↓','Идти тихо (черви не слышат)'],['E (держать) + ← →','X + стик','Клюв: тащить ящик — идите от него; у рычага — дёрнуть кольцо'],['Esc','Start','Пауза'],['F11  ·  F3','—','Полный экран  ·  счётчик FPS']];
+  const rows=[['A D  /  ← →','Стик / крестовина','Бег'],['Пробел  /  W  /  ↑','A','Прыжок (держите — выше); у стены — прыжок от стены'],['E (держать)','X','Клюв: зацеп за кольцо, канатка, действие у цели'],['A D / ← → на тросе','Стик','Раскачка'],['W S / ↑ ↓ на тросе','Стик ↑↓','Подтянуться / отпустить трос'],['Пробел на тросе','A','Сорваться с ускорением'],['Shift (+W вверх)','RB / B','Термо-рывок (¼ заряда Печки)'],['Q (держать)','LB / Y','Обогрев на холоде · плащ-отражатель в Пекле (← → / A D — поворот, ↑ / W — выше)'],['S / ↓ (держать)','Стик ↓','Идти тихо (черви не слышат)'],['E (держать) + ← →','X + стик','Клюв: тащить ящик — идите от него; у рычага — дёрнуть кольцо'],['Esc','Start','Пауза'],['F11 · F3 · T','—','Полный экран · FPS · T держать 1 с — к контрольной точке']];
   const c1=x+40,c2=x+290,c3=x+490, cw3=x+w-40-c3; g.save(); hudLabel(g,'КЛАВИАТУРА',c1,cy+36,UI.accent); hudLabel(g,'ГЕЙМПАД',c2,cy+36,UI.accent); hudLabel(g,'ДЕЙСТВИЕ',c3,cy+36,UI.accent);
   rows.forEach((r,i)=>{ const yy=cy+66+i*39; if(i%2===0){ g.fillStyle='rgba(255,220,180,.05)'; g.fillRect(x+24,yy-26,w-48,38); }
     fitFont(g,r[0],700,16,FONT_U,c2-c1-20,11); g.fillStyle='#ffe6c4'; g.fillText(r[0],c1,yy); fitFont(g,r[1],600,16,FONT_U,c3-c2-20,11); g.fillStyle=UI.dim; g.fillText(r[1],c2,yy);
@@ -93,7 +93,7 @@ function screenControls(){ if(ST.from==='pause'){ renderGame(); ctx.setTransform
   hintBar('Esc / Enter — назад',x+w/2,y+h+30);
   if(INPUT.hit('back')||INPUT.hit('confirm')||MOUSE.click){ MOUSE.click=false; if(ST.from==='pause')setState('pause',{sel:2}); else setState('menu',{sel:4}); } }
 function screenAbout(){ bgMenu(); const g=U; const x=64,y=80,w=900;
-  const P=[['«Линия Зари» — сюжетный 2D-платформер в разработке. Часть I: четыре главы, история продолжается. Хальда — планета, навсегда повёрнутая к солнцу одной стороной. Люди живут в Ползущих городах на рельсах, вечно догоняя сумерки. Ирма Кесс — путевая обходчица города Орсо.',UI.ink],
+  const P=[['«Линия Зари» — сюжетный 2D-платформер в разработке. Часть I: восемь глав, история продолжается. Хальда — планета, навсегда повёрнутая к солнцу одной стороной. Люди живут в Ползущих городах на рельсах, вечно догоняя сумерки. Ирма Кесс — путевая обходчица города Орсо.',UI.ink],
     ['Движок — собственный: Canvas 2D для мира и персонажа + WebGL2 на видеокарте: небо, параллакс, дымка, освещение, bloom, марево, лучи, ударные волны, кино-грейдинг. Процедурная скелетная анимация с IK, физика троса (верлет), Web Audio. Упаковка — Electron.',UI.dim],
     ['Иллюстрации, текстуры и портреты сгенерированы ИИ по арт-дирекшну концепта; текстура соли главы IV — Poly Haven (CC0). Музыка и звуки синтезированы процедурно. Озвучка — нейросетевой синтез речи (Microsoft Edge TTS). Шрифты — Tektur и Exo 2 (SIL Open Font License).',UI.dim]];
   setFont(g,500,17,FONT_U); const LS=P.map(([t])=>wrapText(t,w-80)); const h=72+44+LS.reduce((a,l)=>a+l.length*27+16,0)+20; const cy=windowFrame('Об игре',x,y,w,h);
@@ -151,7 +151,7 @@ function screenGame(dt){ if(INPUT.hit('pause')){ setState('pause'); AUD.setDuck(
   safeRun(()=>renderGame(dt),ctx); safeRun(()=>drawHUD(dt),U);
   if(W.endT){ if(L.goal.fin&&(VOICE.busy()||W.endT<2)){ W.finT=W.endT; } FX.fade=clamp((W.endT-(L.goal.fin?(W.finT||0)+0.3:1.6))/1.4,0,1); if(W.endT>(L.goal.fin?Math.max(3.2,(W.finT||0)+1.8):3.2)&&!((L.goal.kind==='lever'||L.goal.fin)&&VOICE.busy()&&W.endT<(L.goal.fin?20:9))){ AUD.stopAmbient(); const st={time:W.time,deaths:W.deaths,shards:L.shards.filter(s=>s.taken).length,total:L.shards.length};
       SAVE.unlocked=Math.max(SAVE.unlocked||0,Math.min(LEVELS.length-1,LV.idx+1)); SAVE.chapter=Math.min(LEVELS.length-1,LV.idx+1); SAVE.cp=0; if(LV.idx===LEVELS.length-1)SAVE.done=true; persist();
-      setState('chapterEnd',{li:LV.idx,stats:st}); } } }
+      setState('motion8',{li:LV.idx,stats:st}); } } }
 function screenPause(){ renderGame(0); ctx.setTransform(RS,0,0,RS,0,0); overlayDim(.55); FX.dist=0; FX.heat=0; const g=U;
   const x=64,y=120,w=520,h=430; const cy=windowFrame('Пауза',x,y,w,h,`${LV.sub.toUpperCase()} · ${LV.name.toUpperCase()}`);
   const items=[{label:'Продолжить',act:()=>{setState('game');AUD.setDuck(1);}},{label:'Настройки',act:()=>setState('settings',{from:'pause'})},{label:'Управление',act:()=>setState('controls',{from:'pause'})},
@@ -167,7 +167,7 @@ function screenChapterEnd(dt){ const L=LEVELS[ST.li]; ST.t+=dt; VOICE.update(dt)
   Object.assign(FX,{bloom:0.5,thr:0.7,vign:0.5});
   if(ST.t>1.5&&(INPUT.hit('confirm')||MOUSE.click)){ MOUSE.click=false; if(ST.li<LEVELS.length-1)startChapter(ST.li+1,0); else setState('ending',{stats:ST.stats}); } }
 // ---- финал
-function screenEnding(dt){ if(!ST.init){ ST.init=true; AUD.playMusic('m_ending',1.5,false); VOICE.clear(); { const lid=LEVELS[LEVELS.length-1].id; VOICE.say(lid===6?['e6']:lid===5?['e5']:lid===4?['e4']:['e1','e2']); } ST.phase=0; }
+function screenEnding(dt){ if(!ST.init){ ST.init=true; AUD.playMusic('m_ending',1.5,false); VOICE.clear(); { const lid=LEVELS[LEVELS.length-1].id; VOICE.say(lid===8?['e8']:lid===6?['e6']:lid===5?['e5']:lid===4?['e4']:['e1','e2']); } ST.phase=0; }
   ST.t+=dt; const u=clamp(ST.t/40,0,1);
   ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,VH); ctx.globalAlpha=clamp(ST.t/2,0,1); drawCover(IMG.ending,0,0,VW,VH,lerp(1.02,1.14,u),lerp(0.6,0.5,u),0.5); ctx.globalAlpha=1;
   const vg=ctx.createLinearGradient(0,0,0,VH); vg.addColorStop(0,'rgba(0,0,0,.25)'); vg.addColorStop(1,'rgba(0,0,0,.6)'); ctx.fillStyle=vg; ctx.fillRect(0,0,VW,VH);
@@ -201,8 +201,8 @@ function frame(now){ const raw=(now-last)/1000; const dt=Math.min(0.1,raw); FDT=
   U.setTransform(UIK,0,0,UIK,0,0); U.clearRect(0,0,VW,VH);
   fxReset(); FX.time=now/1000;
   try{ switch(STATE){ case 'splash':screenSplash();break; case 'menu':screenMenu();break; case 'chapters':screenChapters();break; case 'settings':screenSettings();break; case 'controls':screenControls();break; case 'about':screenAbout();break; case 'bye':screenBye();break;
-    case 'intro':screenIntro(dt);break; case 'card':screenCard(dt);break; case 'game':screenGame(dt);break; case 'pause':screenPause();break; case 'chapterEnd':screenChapterEnd(dt);break; case 'ending':screenEnding(dt);break; case 'story':screenStory(dt);break; }
-    if(!['intro','ending','game','card','chapterEnd','story'].includes(STATE))VOICE.update(dt);
+    case 'intro':screenIntro(dt);break; case 'card':screenCard(dt);break; case 'game':screenGame(dt);break; case 'pause':screenPause();break; case 'chapterEnd':screenChapterEnd(dt);break; case 'ending':screenEnding(dt);break; case 'story':screenStory(dt);break;case 'motion8':screenMotion8(dt);break; }
+    if(!['intro','ending','game','card','chapterEnd','story','motion8'].includes(STATE))VOICE.update(dt);
     if(SETTINGS.fx==='low'||SETTINGS.fx==='min'){ FX.rays=0; FX.dist=0; FX.heat=0; }
     if(PERF.msg){ PERF.msg.t+=dt; const a=clamp(Math.min(PERF.msg.t/0.3,(4-PERF.msg.t)/0.5),0,1); if(PERF.msg.t>4)PERF.msg=null; else { U.save(); U.globalAlpha=a; setFont(U,600,14,FONT_U); const w=U.measureText(PERF.msg.text).width+40; panel(U,VW-28-w,VH-90,w,34,{c:8,rivets:false}); U.fillStyle=UI.ink; U.fillText(PERF.msg.text,VW-28-w+20,VH-68); U.restore(); } }
     if(SETTINGS.showFps&&STATE!=='game')drawFps();

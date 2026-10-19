@@ -55,7 +55,7 @@ function prepLevelArt(L){ const key='lv'+L.id; if(BG[key])return BG[key];
       else if(k<0.85){ const h=r(200,340), w=r(36,56); mg.lineWidth=3; mg.strokeRect(x,620-h,w,h); mg.lineWidth=2; for(let yy=620-h;yy<620;yy+=w){ mg.beginPath(); mg.moveTo(x,yy); mg.lineTo(x+w,yy+w); mg.moveTo(x+w,yy); mg.lineTo(x,yy+w); mg.stroke(); } mg.fillStyle='rgba(255,214,150,.3)'; mg.fillRect(x-14,620-h-6,w+28,3); }
       else { mg.lineWidth=2; mg.beginPath(); const x2=x+r(200,320), yy=r(200,320); mg.moveTo(x,yy); mg.quadraticCurveTo((x+x2)/2,yy+r(60,120),x2,yy); mg.stroke(); } }
     mg.fillStyle='#0c0f1a'; mg.fillRect(0,610,midW,200);
-  } else if(L.id===5){
+  } else if(L.id===5||L.id>=7){
     // дальний план: силуэт города-ковчега — горы вагонов, башни, огоньки окон
     for(let layer=0;layer<2;layer++){ const base=440+layer*50; fg.fillStyle=layer?'rgba(36,26,50,.92)':'rgba(70,52,92,.55)';
       for(let x=-40;x<farW;x+=r(30,80)){ const h=r(40,layer?170:240), w=r(30,90); fg.fillRect(x,base-h,w,h+300); if(R()<0.3)fg.fillRect(x+w*0.4,base-h-r(30,90),r(4,10),r(30,90));
@@ -78,7 +78,7 @@ function prepLevelArt(L){ const key='lv'+L.id; if(BG[key])return BG[key];
       else { const h=r(80,160); mg.fillRect(x,600-h,r(40,70),h+100); mg.fillStyle='rgba(220,240,255,.3)'; mg.fillRect(x-3,600-h-4,76,5); } }
     mg.fillStyle='#08121c'; mg.fillRect(0,610,midW,200);
   }
-  out.far=far; out.mid=mid; BG[key]=out; return out; }
+  if(L.id>=7){for(const cv of [far,mid]){const gg=cv.getContext('2d');gg.globalCompositeOperation='destination-in';gg.globalAlpha=.24;gg.fillStyle='#fff';gg.fillRect(0,0,cv.width,cv.height);gg.globalAlpha=1;gg.globalCompositeOperation='source-over';}} out.far=far; out.mid=mid; BG[key]=out; return out; }
 // облака/дымка: мягкие полосы
 const CLOUD=(()=>{ const c=mkCanvas(512,128), g=c.getContext('2d'); for(let i=0;i<40;i++){ const x=Math.random()*512, y=64+Math.random()*30-15, r=20+Math.random()*50; const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,'rgba(255,255,255,.35)'); gr.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=gr; g.fillRect(x-r,y-r,r*2,r*2); } return c; })();
 const SUNPOS={1:[0.27,0.4],2:[0.11,0.49],3:[0.05,0.72],4:[0.5,0.44],5:[0.72,0.36],6:[0.62,0.72]};
@@ -119,3 +119,5 @@ function drawLayers(L,cam){ if(FX.bg)return; const A=prepLevelArt(L); const pal=
     for(let i=0;i<7;i++){ const a=0.35+i*0.13+Math.sin(t*0.2+i)*0.03; const len=1500; ctx.globalAlpha=(0.04+0.03*Math.sin(t*0.7+i*1.7))*(L.id===1?1.2:0.9);
       const gr=ctx.createLinearGradient(sx,sy,sx+Math.cos(a)*len,sy+Math.sin(a)*len); gr.addColorStop(0,L.id===1?'#fff0c8':'#ffb080'); gr.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=gr;
       ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(sx+Math.cos(a-0.04)*len,sy+Math.sin(a-0.04)*len); ctx.lineTo(sx+Math.cos(a+0.04)*len,sy+Math.sin(a+0.04)*len); ctx.fill(); } ctx.restore(); ctx.globalAlpha=1; } }
+
+SUNPOS[7]=[0.55,0.18]; SUNPOS[8]=[0.65,0.24];

@@ -126,7 +126,7 @@ function drawHUD(dt){ const g=U, P=W.P, L=LV; freezeOverlay(g); g.save(); g.text
   { const tot=L.shards.length, got=L.shards.filter(s=>s.taken).length; const w=196,h=56,x=VW-28-w,y=22; panel(g,x,y,w,h,{c:10,alpha:0.92,col:'#5fb8aa',rivetCol:'#9ff0e0'});
     const cx=x+30, cy=y+28; g.fillStyle='rgba(170,255,240,.95)'; g.beginPath(); g.moveTo(cx,cy-11); g.lineTo(cx+7,cy); g.lineTo(cx,cy+11); g.lineTo(cx-7,cy); g.closePath(); g.fill();
     g.fillStyle='rgba(255,255,255,.6)'; g.beginPath(); g.moveTo(cx,cy-11); g.lineTo(cx+3,cy-2); g.lineTo(cx,cy); g.closePath(); g.fill();
-    setFont(g,700,20,FONT_T); g.fillStyle='#eafffb'; g.textAlign='left'; g.fillText(`${got} / ${tot}`,x+52,y+28); hudLabel(g,'ОСКОЛКИ ПАМЯТИ',x+52,y+44,'rgba(190,255,245,.6)'); }
+    setFont(g,700,20,FONT_T); g.fillStyle='#eafffb'; g.textAlign='left'; g.fillText(`${got} / ${tot}`,x+52,y+28); hudLabel(g,'ПУТЕВЫЕ ЗАПИСИ',x+52,y+44,'rgba(190,255,245,.6)'); }
   // глаз фонарщика
   if(W.expo>0.02){ const a=clamp(W.expo*1.5,0,1); g.save(); g.translate(VW/2,64); g.globalAlpha=a; g.fillStyle='rgba(20,6,4,.7)'; g.beginPath(); g.arc(0,0,40,0,7); g.fill(); g.strokeStyle='#ff6a4a'; g.lineWidth=2.5; g.beginPath(); g.ellipse(0,0,24,11,0,0,7); g.stroke(); g.fillStyle='#ff6a4a'; g.beginPath(); g.arc(0,0,4+W.expo*4,0,7); g.fill(); g.lineWidth=3; g.beginPath(); g.arc(0,0,34,-Math.PI/2,-Math.PI/2+Math.PI*2*W.expo); g.stroke(); g.restore(); }
   // название главы в начале

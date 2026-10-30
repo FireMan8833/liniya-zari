@@ -43,8 +43,8 @@ function bgMenu(img='cover'){ const t=performance.now()/1000; const mx=(MOUSE.x/
   Object.assign(FX,{bloom:0.5,thr:0.7,vign:0.45,grain:0.05,sat:1.05}); }
 function drawTitle(x,y,size=84,a=1){ const g=U; g.save(); g.globalAlpha=a; g.textAlign='left'; setFont(g,700,size,FONT_T); g.letterSpacing=(size*0.05)+'px';
   g.shadowColor='rgba(255,140,60,.45)'; g.shadowBlur=24; g.fillStyle='#fff3e4'; g.fillText('ЛИНИЯ ЗАРИ',x,y); g.shadowBlur=0;
-  const w=g.measureText('ЛИНИЯ ЗАРИ').width; g.letterSpacing='5px'; setFont(g,700,13,FONT_U); g.fillStyle=UI.accent; g.fillText('ЧАСТЬ I  ·  ВОСЕМЬ ГЛАВ',x+4,y+34);
-  g.strokeStyle='rgba(201,138,75,.7)'; g.lineWidth=1.2; g.beginPath(); g.moveTo(x+240,y+29); g.lineTo(x+Math.max(300,w-20),y+29); g.stroke(); g.restore(); }
+  const w=g.measureText('ЛИНИЯ ЗАРИ').width; g.letterSpacing='5px'; setFont(g,700,13,FONT_U); g.fillStyle=UI.accent; g.fillText('ЧАСТЬ I  ·  ОДИННАДЦАТЬ ГЛАВ',x+4,y+34);
+  g.strokeStyle='rgba(201,138,75,.7)'; g.lineWidth=1.2; g.beginPath(); g.moveTo(x+360,y+29); g.lineTo(x+Math.max(300,w-20),y+29); g.stroke(); g.restore(); }
 function screenSplash(){ ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,VH); ST.t+=FDT; const a=clamp(ST.t/1.2,0,1); const g=U;
   g.save(); g.globalAlpha=a; g.textAlign='center'; setFont(g,700,64,FONT_T); g.letterSpacing='5px'; g.fillStyle='#fff1e0'; g.fillText('ЛИНИЯ ЗАРИ',VW/2,VH/2-14); g.letterSpacing='0px';
   ornament(g,VW/2,VH/2+14,420,UI.brass,1); g.letterSpacing='3px';
@@ -150,7 +150,7 @@ function screenGame(dt){ if(INPUT.hit('pause')){ setState('pause'); AUD.setDuck(
   if(W.endT){ W.endT+=dt; }
   safeRun(()=>renderGame(dt),ctx); safeRun(()=>drawHUD(dt),U);
   if(W.endT){ if(L.goal.fin&&(VOICE.busy()||W.endT<2)){ W.finT=W.endT; } FX.fade=clamp((W.endT-(L.goal.fin?(W.finT||0)+0.3:1.6))/1.4,0,1); if(W.endT>(L.goal.fin?Math.max(3.2,(W.finT||0)+1.8):3.2)&&!((L.goal.kind==='lever'||L.goal.fin)&&VOICE.busy()&&W.endT<(L.goal.fin?20:9))){ AUD.stopAmbient(); const st={time:W.time,deaths:W.deaths,shards:L.shards.filter(s=>s.taken).length,total:L.shards.length};
-      SAVE.unlocked=Math.max(SAVE.unlocked||0,Math.min(LEVELS.length-1,LV.idx+1)); SAVE.chapter=Math.min(LEVELS.length-1,LV.idx+1); SAVE.cp=0; if(LV.idx===LEVELS.length-1)SAVE.done=true; persist();
+      SAVE.unlocked=Math.max(SAVE.unlocked||0,Math.min(LEVELS.length-1,LV.idx+1)); SAVE.chapter=Math.min(LEVELS.length-1,LV.idx+1); SAVE.cp=0; SAVE.done=false; persist();
       setState('motion8',{li:LV.idx,stats:st}); } } }
 function screenPause(){ renderGame(0); ctx.setTransform(RS,0,0,RS,0,0); overlayDim(.55); FX.dist=0; FX.heat=0; const g=U;
   const x=64,y=120,w=520,h=430; const cy=windowFrame('Пауза',x,y,w,h,`${LV.sub.toUpperCase()} · ${LV.name.toUpperCase()}`);
